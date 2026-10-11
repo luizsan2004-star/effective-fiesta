@@ -301,6 +301,36 @@ input[type=number]:focus{border-color:var(--gold);box-shadow:0 0 0 3px #e8c35a30
 .wal span{font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:#d9c27a;font-weight:600}
 .wal b{font-family:var(--fd);font-size:1.7rem;color:var(--gold);line-height:1}
 .wal small{display:block;color:var(--muted);font-size:.72rem;margin-top:2px;text-align:right}
+.wal{cursor:pointer}
+.wal:active{filter:brightness(1.2)}
+.wgo{display:block;font-style:normal;text-transform:none;letter-spacing:0;font-weight:400;font-size:.7rem;color:var(--muted);margin-top:3px}
+#coins{cursor:pointer}
+#notice div.ok{background:#1e6b3a}
+#userbox,#walbox{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:#000b}
+#userbox{z-index:280}#walbox{z-index:250}
+#userbox.on,#walbox.on{display:flex;animation:pop .25s ease}
+.ubox,.wbox{position:relative;width:100%;max-width:420px;max-height:88vh;overflow:auto;background:linear-gradient(#0f4a34,#072a1d);border:2px solid var(--gold);border-radius:18px;padding:22px 18px 18px;box-shadow:0 10px 40px #000c}
+.ubox h3,.wbox h3{font-family:Georgia,serif;color:var(--gold);margin:0 0 6px;font-size:1.35rem;text-align:center}
+.ubox p{margin:0 0 8px;line-height:1.45;color:var(--ink);text-align:center;font-size:.95rem}
+.uerr,.gmsg,.gnote{min-height:1.2em;font-size:.88rem;margin:8px 0 0;text-align:center;line-height:1.35;color:#ff8a94}
+.gmsg.ok{color:#8fe3a4}
+.wuser{text-align:center;color:var(--muted);font-size:.9rem}
+.wbig{text-align:center;font-family:Georgia,serif;font-size:2.2rem;color:var(--gold);margin:4px 0 12px}
+.wtabs{display:flex;gap:8px;margin-bottom:12px}
+.wtabs button{flex:1;border:1px solid #e8c35a66;background:#0007;color:var(--ink);border-radius:10px;padding:10px 6px;font-weight:600;cursor:pointer;font-family:var(--fb)}
+.wtabs button.on{background:var(--gold);color:#2a1d00}
+#gchips{flex-wrap:wrap}
+#whist{max-height:46vh;overflow:auto}
+.hrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #ffffff1a}
+.hrow i{font-style:normal;font-size:1.3rem}
+.hrow div{flex:1;min-width:0}
+.hrow b{display:block;font-size:.92rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hrow small{color:var(--muted);font-size:.74rem}
+.hrow span{font-weight:700;white-space:nowrap}
+.hrow span.pos{color:#8fe3a4}.hrow span.neg{color:#ff8a94}
+input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#0008;color:var(--ink);font-size:1rem;margin-top:6px}
+.uhint{font-size:.78rem;color:var(--muted);line-height:1.35;margin:8px 0 0;text-align:center}
+.ubox .wtabs{margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -333,6 +363,49 @@ input[type=number]:focus{border-color:var(--gold);box-shadow:0 0 0 3px #e8c35a30
   <div class="rnav"><button id="rprev">◀</button><div class="rdots" id="rdots"></div><button id="rnext">▶</button></div>
 </div></div>
 <div id="betbox" role="dialog" aria-label="Aposta"></div>
+<div id="userbox" role="dialog" aria-label="Nome de usuário"><div class="ubox">
+  <h3>Seu nome de usuário</h3>
+  <div class="wtabs" id="utabs"><button class="on" data-ut="new">Criar usuário</button><button data-ut="login">Já tenho conta</button></div>
+  <div id="unew">
+    <p>Ele fica salvo neste aparelho e é como os outros jogadores vão te encontrar para doar moedas. Para sentar nas mesas você ainda usa o apelido.</p>
+    <label>Nome de usuário<input type="text" id="uname" maxlength="16" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="ex: sanm"></label>
+    <label style="display:block;margin-top:10px">Senha (opcional)<input type="password" id="upass" maxlength="64" autocomplete="new-password" placeholder="mínimo 6 caracteres"></label>
+    <div class="uhint">Com senha, você recupera suas moedas e o histórico em outro navegador. Sem senha, a conta fica só neste aparelho. Não existe recuperação de senha, então anote-a.</div>
+    <button class="btn" id="usave">Salvar</button>
+  </div>
+  <div id="ulogin" style="display:none">
+    <p>Entre com o usuário e a senha para trazer sua conta para este navegador.</p>
+    <label>Nome de usuário<input type="text" id="lname" maxlength="17" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="seu usuário"></label>
+    <label style="display:block;margin-top:10px">Senha<input type="password" id="lpass" maxlength="64" autocomplete="current-password" placeholder="sua senha"></label>
+    <div class="uhint">As moedas deste navegador novo são substituídas pelas da sua conta.</div>
+    <button class="btn" id="ulogbtn">Entrar</button>
+  </div>
+  <div class="uerr" id="uerr"></div>
+</div></div>
+<div id="walbox" role="dialog" aria-label="Carteira"><div class="wbox">
+  <button class="rx" id="wx" aria-label="Fechar">✕</button>
+  <h3>Sua carteira</h3>
+  <div class="wuser" id="wuser"></div>
+  <div class="wbig" id="wbig">🪙 0</div>
+  <div class="wtabs"><button class="on" data-wt="gift">🎁 Doar</button><button data-wt="hist">📜 Histórico</button><button data-wt="acct">🔒 Conta</button></div>
+  <div id="wgift">
+    <label>Para quem (nome de usuário)<input type="text" id="gto" maxlength="17" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="nome de usuário"></label>
+    <label style="display:block;margin-top:10px">Quantidade<input type="text" inputmode="numeric" id="gamt" placeholder="0"></label>
+    <div class="chips" id="gchips"><button data-v="10">10</button><button data-v="50">50</button><button data-v="100">100</button><button data-v="all">Tudo</button></div>
+    <div class="gnote" id="gnote"></div>
+    <div class="gmsg" id="gmsg"></div>
+    <button class="btn" id="gsend">Doar moedas</button>
+  </div>
+  <div id="whist" style="display:none"></div>
+  <div id="wacct" style="display:none">
+    <p class="hint" id="acctinfo"></p>
+    <div id="acctform">
+      <label>Criar senha<input type="password" id="apass" maxlength="64" autocomplete="new-password" placeholder="mínimo 6 caracteres"></label>
+      <div class="gmsg" id="amsg"></div>
+      <button class="btn" id="asave">Salvar senha</button>
+    </div>
+  </div>
+</div></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -576,8 +649,9 @@ let prev=null,animLock=0,localOut=false,discShown=0,lastView='',holdParity=0,sel
 let DEV='',ctxErr='',betMode='',betKey='',beatKey='',presOK=false,sweeping=false,leaving=false,pres={};
 const wallet={ok:false,coins:0,err:'',zeroAt:0};
 let granting=false;
+let USER='',loggingIn=false,savingAcct=false,savingUser=false,giving=false,hist=[],histFirst=true,histUnsub=null;
 
-function toast(m){const n=$('#notice');n.innerHTML='<div>'+esc(m)+'</div>';clearTimeout(toast.t);toast.t=setTimeout(()=>{n.innerHTML='';},4000);}
+function toast(m,ok){const n=$('#notice');n.innerHTML='<div'+(ok?' class="ok"':'')+'>'+esc(m)+'</div>';clearTimeout(toast.t);toast.t=setTimeout(()=>{n.innerHTML='';},4000);}
 const getNick=()=>($('#nick').value||'').trim().slice(0,16);
 
 function findMine(){
@@ -634,6 +708,7 @@ function paintCoins(){
   }
   el.textContent=t;
   const wt=$('#walt');if(wt)wt.textContent=cd;
+  paintWal();
 }
 /* sem moedas: depois de 30 min zerado, recebe 50 (só uma vez; zerar de novo reinicia a contagem) */
 async function claimGrant(){
@@ -668,6 +743,7 @@ async function readW(tx,S){
   return W;
 }
 function writeW(tx,W,W0){
+  (W.__h||[]).forEach(h=>tx.set(fs.collection('wallets/'+h.dev+'/history').doc(),h.rec));
   Object.keys(W).forEach(d=>{
     if(W[d]===W0[d])return;
     const data={coins:W[d],ts:Date.now()};
@@ -682,6 +758,11 @@ function settle(S,W,w){
   const st=S.stake||0;if(!st||!W)return;
   if(w<0){S.seats.forEach(x=>{if(x.dev&&W[x.dev]!==undefined)W[x.dev]+=st;});}
   else{const d=S.seats[w].dev;if(d&&W[d]!==undefined)W[d]+=st*2;}
+  if(!W.__h)Object.defineProperty(W,'__h',{value:[]});
+  S.seats.forEach((x,k)=>{
+    if(!x.dev)return;
+    W.__h.push({dev:x.dev,rec:{type:'game',res:w<0?'draw':(w===k?'win':'loss'),bet:st,opp:(S.seats[1-k]&&S.seats[1-k].name)||'?',tid:S.id,ts:Date.now()}});
+  });
   S.payout={w,st};S.stake=0;
 }
 
@@ -1094,7 +1175,7 @@ function lobbyHTML(){
       <div class="seats">${S.seats.map(x=>`<div class="seat${x.uid&&!x.left?' taken':''}">${x.uid&&!x.left?esc(x.name):'Vaga livre'}</div>`).join('')}</div>${btn}</div>`;
   }).join('');
   const broke=(wallet.ok&&wallet.coins<=0)?`<div class="warn">Você está sem moedas. Depois de 30 minutos zerado, o sistema dá <b>🪙${GRANT_COINS}</b> (uma vez).</div>`:'';
-  const bal=`<div class="panel wal"><span>Suas moedas</span><div><b>🪙 ${wallet.ok?wallet.coins:'...'}</b><small id="walt"></small></div></div>`;
+  const bal=`<div class="panel wal"><span>Suas moedas<em class="wgo">Toque para abrir a carteira</em></span><div><b>🪙 ${wallet.ok?wallet.coins:'...'}</b><small id="walt"></small></div></div>`;
   return bal+warn+broke+`<div class="lgrid">${cards}</div>`;
 }
 
@@ -1744,6 +1825,236 @@ addEventListener('pagehide',()=>{if(V.on)voiceStop();});
   open();   /* aparece sempre que alguém abre o site */
 })();
 
+/* ---------- nome de usuário (salvo no aparelho) + carteira (doar e histórico) ---------- */
+const userKey=n=>String(n||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const USER_RE=/^[A-Za-z0-9\u00C0-\u00FF][A-Za-z0-9\u00C0-\u00FF_.\-]{2,15}$/;
+const fmtT=ts=>{try{return new Date(ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return '';}};
+
+function setUser(n){
+  USER=n;
+  try{localStorage.setItem('vom_user',n);}catch(e){}
+  const nk=$('#nick');if(nk&&!nk.value)nk.value=n.slice(0,16);
+  watchHistory();paintWal();
+}
+/* usernames/<nome sem acento, minúsculo> = {dev, name}: um nome só pode pertencer a um aparelho */
+async function claimUsername(name){
+  const ref=fs.doc('usernames/'+userKey(name));
+  return fs.runTransaction(async tx=>{
+    const sn=await tx.get(ref);
+    if(sn.exists&&sn.data().dev!==DEV)return 'taken';
+    if(sn.exists)tx.update(ref,{name});
+    else tx.set(ref,{dev:DEV,name,ts:Date.now()});
+    return 'ok';
+  });
+}
+async function initUser(){
+  let u='';
+  try{u=localStorage.getItem('vom_user')||'';}catch(e){}
+  if(!u){   /* limpou o armazenamento mas o aparelho ainda é o mesmo: recupera o nome */
+    try{
+      const q=await fs.collection('usernames').where('dev','==',DEV).limit(1).get();
+      if(!q.empty)u=q.docs[0].data().name||'';
+    }catch(e){}
+  }
+  if(u){
+    try{if(await claimUsername(u)==='ok'){setUser(u);return;}}
+    catch(e){setUser(u);return;}
+  }
+  askUser(u?'Esse nome de usuário foi pego por outra pessoa. Escolha outro.':'');
+}
+function askUser(msg){
+  utabSet('new');
+  $('#uerr').textContent=msg||'';
+  $('#userbox').classList.add('on');
+  setTimeout(()=>{const i=$('#uname');if(i)i.focus();},250);
+}
+const emailFor=n=>Array.from(new TextEncoder().encode(userKey(n))).map(b=>b.toString(16).padStart(2,'0')).join('')+'@vom.game';
+const hasPw=()=>{const u=window.firebase&&firebase.auth().currentUser;return !!(u&&!u.isAnonymous);};
+function authMsg(e){
+  const c=(e&&e.code)||'';
+  if(c==='auth/operation-not-allowed')return 'Ative o login por Email/Senha no Firebase (Authentication > Método de login).';
+  if(c==='auth/weak-password')return 'Senha fraca: use pelo menos 6 caracteres.';
+  if(c==='auth/email-already-in-use')return 'Esse usuário já tem uma senha cadastrada.';
+  if(c==='auth/too-many-requests')return 'Muitas tentativas. Aguarde um pouco e tente de novo.';
+  if(c==='auth/network-request-failed')return 'Sem conexão com a internet.';
+  return (e&&e.message)||String(e);
+}
+/* senha: transforma o login anônimo em login com senha (mesmo uid) e guarda qual aparelho/carteira é da conta */
+async function protect(name,pw){
+  const cu=firebase.auth().currentUser;
+  if(!cu||!cu.isAnonymous)throw new Error('Esta conta já tem senha.');
+  await cu.linkWithCredential(firebase.auth.EmailAuthProvider.credential(emailFor(name),pw));
+  await fs.doc('accounts/'+cu.uid).set({dev:DEV,user:name,ts:Date.now()});
+}
+function utabSet(t){
+  $('#unew').style.display=t==='new'?'block':'none';
+  $('#ulogin').style.display=t==='login'?'block':'none';
+  document.querySelectorAll('#utabs [data-ut]').forEach(b=>b.classList.toggle('on',b.dataset.ut===t));
+  $('#uerr').textContent='';
+}
+async function saveUser(){
+  if(savingUser)return;
+  const n=($('#uname').value||'').trim().replace(/^@/,''),pw=$('#upass').value||'',er=$('#uerr');
+  if(!USER_RE.test(n)){er.textContent='Use de 3 a 16 caracteres: letras, números, _ . ou - (começando com letra ou número).';return;}
+  if(pw&&pw.length<6){er.textContent='A senha precisa ter pelo menos 6 caracteres.';return;}
+  savingUser=true;$('#usave').disabled=true;er.textContent='';
+  try{
+    const r=await claimUsername(n);
+    if(r==='taken'){er.textContent='Esse nome já está em uso. Se for seu, toque em "Já tenho conta".';return;}
+    setUser(n);
+    let pe='';
+    if(pw){try{await protect(n,pw);}catch(e){pe=authMsg(e);}}
+    $('#userbox').classList.remove('on');
+    toast(pe?('Usuário criado, mas a senha não foi salva: '+pe):('Bem-vindo, '+n+'!'+(pw?' Conta protegida com senha.':'')),!pe);
+  }catch(e){er.textContent='Não foi possível salvar. Confira as regras do Firestore (coleção usernames). '+((e&&e.message)||'');}
+  finally{savingUser=false;$('#usave').disabled=false;$('#upass').value='';}
+}
+/* entrar numa conta existente (outro navegador): troca para o aparelho/carteira da conta e recarrega */
+async function loginAcct(){
+  if(loggingIn)return;
+  const n=($('#lname').value||'').trim().replace(/^@/,''),pw=$('#lpass').value||'',er=$('#uerr');
+  if(!n||!pw){er.textContent='Digite o usuário e a senha.';return;}
+  loggingIn=true;$('#ulogbtn').disabled=true;er.textContent='';
+  try{
+    const au=firebase.auth();
+    const cred=await au.signInWithEmailAndPassword(emailFor(n),pw);
+    const ac=await fs.doc('accounts/'+cred.user.uid).get();
+    if(!ac.exists||!ac.data().dev){
+      await au.signOut();er.textContent='Esta conta não tem dados salvos. Recarregando...';
+      setTimeout(()=>location.reload(),2200);return;
+    }
+    const d=ac.data();
+    try{localStorage.setItem('vom_dev',d.dev);localStorage.setItem('vom_user',d.user||n);}catch(e){}
+    try{document.cookie='vom_dev='+d.dev+';max-age=63072000;path=/;SameSite=Lax';}catch(e){}
+    er.textContent='Entrando...';
+    location.reload();
+  }catch(e){
+    const c=(e&&e.code)||'';
+    er.textContent=(c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/user-not-found'||c==='auth/invalid-login-credentials')?'Usuário ou senha incorretos.':authMsg(e);
+  }
+  finally{loggingIn=false;$('#ulogbtn').disabled=false;}
+}
+function paintAcct(){
+  const i=$('#acctinfo'),f=$('#acctform');if(!i)return;
+  const p=hasPw();
+  i.textContent=p?'Sua conta está protegida por senha. Em outro navegador, toque em "Já tenho conta" e entre com seu usuário e senha para recuperar suas moedas e o histórico.':'Crie uma senha para poder recuperar sua conta (moedas e histórico) em outro navegador ou aparelho. Não existe recuperação de senha, então anote-a.';
+  f.style.display=p?'none':'block';
+}
+async function saveAcct(){
+  if(savingAcct)return;
+  const pw=$('#apass').value||'';
+  if(!USER){gmsg('Defina seu nome de usuário primeiro.',false,'amsg');return;}
+  if(pw.length<6){gmsg('A senha precisa ter pelo menos 6 caracteres.',false,'amsg');return;}
+  savingAcct=true;$('#asave').disabled=true;gmsg('Salvando...',true,'amsg');
+  try{
+    await protect(USER,pw);
+    $('#apass').value='';gmsg('',true,'amsg');paintAcct();toast('Conta protegida com senha!',true);
+  }catch(e){gmsg(authMsg(e),false,'amsg');}
+  finally{savingAcct=false;$('#asave').disabled=false;}
+}
+
+/* histórico: wallets/<aparelho>/history */
+function watchHistory(){
+  if(histUnsub||!fs||!DEV)return;
+  histUnsub=fs.collection('wallets/'+DEV+'/history').orderBy('ts','desc').limit(40).onSnapshot(sn=>{
+    hist=sn.docs.map(d=>d.data());
+    if(!histFirst)sn.docChanges().forEach(c=>{
+      const h=c.doc.data();
+      if(c.type==='added'&&h.type==='gift_in'&&Date.now()-(h.ts||0)<20000)toast('Você recebeu 🪙'+h.amt+' de '+h.other+'!',true);
+    });
+    histFirst=false;paintHist();
+  },()=>{});
+}
+function paintHist(){
+  const el=$('#whist');if(!el)return;
+  if(!hist.length){el.innerHTML='<p class="hint">Nenhuma aposta ou doação ainda.</p>';return;}
+  el.innerHTML=hist.map(h=>{
+    let ic,tx,cl='',val;
+    if(h.type==='gift_out'){ic='🎁';tx='Doou para '+h.other;val='−'+h.amt;cl='neg';}
+    else if(h.type==='gift_in'){ic='🎁';tx='Recebeu de '+h.other;val='+'+h.amt;cl='pos';}
+    else if(h.res==='win'){ic='🏆';tx='Vitória contra '+h.opp;val='+'+h.bet;cl='pos';}
+    else if(h.res==='loss'){ic='💀';tx='Derrota contra '+h.opp;val='−'+h.bet;cl='neg';}
+    else{ic='🤝';tx='Empate com '+h.opp;val='0';}
+    const n=TABLE_IDS.indexOf(h.tid);
+    const sub=fmtT(h.ts)+(n>=0?' · Mesa '+(n+1):'');
+    return `<div class="hrow"><i>${ic}</i><div><b>${esc(tx)}</b><small>${sub}</small></div><span class="${cl}">${val} 🪙</span></div>`;
+  }).join('');
+}
+
+/* carteira (janela) */
+function paintWal(){
+  const bx=$('#walbox');if(!bx)return;
+  $('#wbig').textContent='🪙 '+(wallet.ok?wallet.coins:'...');
+  $('#wuser').textContent=USER?('@'+USER):'';
+  const note=$('#gnote'),btn=$('#gsend');
+  if(mine){note.textContent='Saia da mesa para poder doar moedas.';btn.disabled=true;}
+  else{note.textContent='';btn.disabled=giving||!wallet.ok||!USER;}
+}
+function wtabSet(t){
+  $('#wgift').style.display=t==='gift'?'block':'none';
+  $('#whist').style.display=t==='hist'?'block':'none';
+  $('#wacct').style.display=t==='acct'?'block':'none';
+  if(t==='acct')paintAcct();
+  document.querySelectorAll('#walbox [data-wt]').forEach(b=>b.classList.toggle('on',b.dataset.wt===t));
+}
+function openWallet(){
+  if(!USER&&db&&uid&&wallet.ok){askUser('');return;}
+  paintWal();paintHist();wtabSet('gift');
+  $('#gmsg').textContent='';$('#amsg').textContent='';
+  $('#walbox').classList.add('on');
+}
+function closeWallet(){$('#walbox').classList.remove('on');}
+function gmsg(m,ok,id){const e=$('#'+(id||'gmsg'));e.textContent=m;e.className='gmsg'+(ok?' ok':'');}
+
+async function donate(){
+  if(giving)return;
+  const to=($('#gto').value||'').trim().replace(/^@/,'');
+  const amt=parseInt(($('#gamt').value||'').replace(/\D/g,''),10)||0;
+  if(mine){gmsg('Saia da mesa para poder doar moedas.');return;}
+  if(!to){gmsg('Digite o nome de usuário de quem vai receber.');return;}
+  if(userKey(to)===userKey(USER)){gmsg('Você não pode doar para você mesmo.');return;}
+  if(amt<1){gmsg('Digite uma quantidade de moedas.');return;}
+  if(amt>wallet.coins){gmsg('Você só tem 🪙'+wallet.coins+'.');return;}
+  giving=true;paintWal();gmsg('Enviando...',true);
+  try{
+    const res=await fs.runTransaction(async tx=>{
+      const usn=await tx.get(fs.doc('usernames/'+userKey(to)));
+      if(!usn.exists)return {err:'Usuário não encontrado. Confira o nome.'};
+      const toDev=usn.data().dev,toName=usn.data().name||to;
+      if(toDev===DEV)return {err:'Você não pode doar para você mesmo.'};
+      const sref=fs.doc('wallets/'+DEV),rref=fs.doc('wallets/'+toDev);
+      const [ssn,rsn]=await Promise.all([tx.get(sref),tx.get(rref)]);
+      if(!ssn.exists||!rsn.exists)return {err:'Carteira não encontrada.'};
+      const sc=ssn.data().coins||0;
+      if(sc<amt)return {err:'Você não tem moedas suficientes.'};
+      const now=Date.now(),left=sc-amt;
+      tx.update(sref,{coins:left,ts:now,zeroAt:left<=0?now:null});
+      tx.update(rref,{coins:(rsn.data().coins||0)+amt,ts:now,zeroAt:null});
+      tx.set(fs.collection('wallets/'+DEV+'/history').doc(),{type:'gift_out',other:toName,amt,ts:now});
+      tx.set(fs.collection('wallets/'+toDev+'/history').doc(),{type:'gift_in',other:USER,amt,ts:now});
+      return {ok:true,toName};
+    });
+    if(res.err)gmsg(res.err);
+    else{gmsg('Você doou 🪙'+amt+' para '+res.toName+'!',true);$('#gamt').value='';$('#gto').value='';Snd.sfx('click');}
+  }catch(e){gmsg('Não foi possível doar: '+((e&&e.message)||e));}
+  finally{giving=false;paintWal();}
+}
+
+$('#wx').onclick=closeWallet;
+$('#walbox').addEventListener('pointerdown',e=>{if(e.target.id==='walbox')closeWallet();});
+document.querySelectorAll('#walbox [data-wt]').forEach(b=>{b.onclick=()=>wtabSet(b.dataset.wt);});
+document.querySelectorAll('#gchips button').forEach(b=>{b.onclick=()=>{$('#gamt').value=b.dataset.v==='all'?String(wallet.coins):b.dataset.v;};});
+$('#gamt').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'');});
+$('#gsend').onclick=donate;
+$('#usave').onclick=saveUser;
+$('#uname').addEventListener('keydown',e=>{if(e.key==='Enter')saveUser();});
+$('#upass').addEventListener('keydown',e=>{if(e.key==='Enter')saveUser();});
+$('#lpass').addEventListener('keydown',e=>{if(e.key==='Enter')loginAcct();});
+$('#ulogbtn').onclick=loginAcct;
+$('#asave').onclick=saveAcct;
+document.querySelectorAll('#utabs [data-ut]').forEach(b=>{b.onclick=()=>utabSet(b.dataset.ut);});
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.wal,#coins')){Snd.init();openWallet();}});
+
 /* ---------- início ---------- */
 async function boot(){
   try{$('#nick').value=localStorage.getItem('vom_nick')||'';}catch(e){}
@@ -1753,9 +2064,12 @@ async function boot(){
     if(FIREBASE_CONFIG.apiKey.indexOf('COLE')===0)throw new Error('FIREBASE_CONFIG ainda não foi preenchido.');
     firebase.initializeApp(FIREBASE_CONFIG);
     fs=firebase.firestore();
-    const cred=await firebase.auth().signInAnonymously();
-    uid=cred.user.uid;canWrite=true;db=fs;DEV=getDev();
+    const au=firebase.auth();
+    let cu=await new Promise(r=>{const un=au.onAuthStateChanged(x=>{un();r(x);});});   /* mantém o login salvo (anônimo ou com senha) */
+    if(!cu)cu=(await au.signInAnonymously()).user;
+    uid=cu.uid;canWrite=true;db=fs;DEV=getDev();
     try{await initWallet();}catch(e){wallet.err=(e&&e.message)||String(e);}
+    try{await initUser();}catch(e){}
   }catch(e){initError=(e&&e.message)||String(e);}
   ready=true;
   if(db&&uid){
