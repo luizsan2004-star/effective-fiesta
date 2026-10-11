@@ -156,19 +156,68 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .felt .die.q{font-size:1.5rem}
 .hand.mini5.rev .slot{max-width:56px}
 .panel.mini .sum{margin:6px 0 0}
+
+#rules{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:18px;background:#000b}
+#rules.on{display:flex;animation:pop .25s ease}
+.rbox{position:relative;width:100%;max-width:420px;background:linear-gradient(#0f4a34,#072a1d);border:2px solid var(--gold);border-radius:18px;padding:22px 18px 16px;box-shadow:0 10px 40px #000c}
+.rx{position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:50%;border:1px solid #ffffff44;background:#0007;color:var(--ink);font-size:1.1rem;cursor:pointer;padding:0}
+.rview{overflow:hidden;margin-top:6px}
+.rtrack{display:flex;transition:transform .35s ease}
+.rslide{flex:0 0 100%;min-height:190px;text-align:center;padding:0 8px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.rslide .ri{font-size:2.6rem}
+.rslide h3{font-family:Georgia,serif;color:var(--gold);margin:6px 0;font-size:1.35rem}
+.rslide p{margin:0;line-height:1.5;color:var(--ink);font-size:1rem}
+.rnav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+.rnav button{border:0;border-radius:10px;padding:10px 16px;font-weight:700;font-size:1rem;cursor:pointer;background:var(--gold);color:#2a1d00}
+.rnav button:disabled{opacity:.35;cursor:default}
+.rdots{display:flex;gap:6px}
+.rdots i{width:8px;height:8px;border-radius:50%;background:#ffffff44}
+.rdots i.on{background:var(--gold)}
+.sb.rb{width:auto;border-radius:99px;padding:0 12px;font-size:.85rem}
+
+#voicebar{display:none;margin:6px 0 2px}
+.vp{display:flex;align-items:center;gap:8px;background:#0007;border:1px solid #ffffff2a;border-radius:14px;padding:8px 10px;flex-wrap:wrap}
+.vu{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted);min-width:0}
+.vu span{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vdot{width:12px;height:12px;border-radius:50%;background:#555;flex:none;transition:all .12s}
+.vu.in .vdot{background:#4fd08a}
+.vu.sp .vdot{box-shadow:0 0 0 3px #4fd08a88,0 0 10px #4fd08a;transform:scale(1.15)}
+.vu.mt .vdot{background:#c8202f}
+.vctl{display:flex;gap:6px;margin-left:auto}
+.vb{border:0;border-radius:99px;padding:7px 12px;font-weight:700;font-size:.82rem;cursor:pointer;background:var(--gold);color:#2a1d00}
+.vb.alt{background:#ffffff22;color:var(--ink)}
+.vb.red{background:#7a0f1b;color:#fff}
+.vst{width:100%;font-size:.75rem;color:var(--muted)}
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="sndbar"><button class="sb" id="bm" aria-label="Música">🎵</button><button class="sb" id="bs" aria-label="Efeitos sonoros">🔊</button></div>
+  <div id="sndbar"><button class="sb rb" id="br">📖 Regras</button><button class="sb" id="bm" aria-label="Música">🎵</button><button class="sb" id="bs" aria-label="Efeitos sonoros">🔊</button></div>
   <div id="top">
     <h1>VIDA <span class="m">ou</span> MORTE</h1>
     <p class="sub">Escolha uma mesa e sente-se. Cada mesa tem 2 vagas.</p>
     <div class="panel"><label>Seu apelido<input type="text" id="nick" maxlength="16" placeholder="Digite seu apelido"></label></div>
   </div>
   <div id="notice"></div>
+  <div id="voicebar"><div class="vp">
+    <div class="vu" id="vume"><i class="vdot"></i><span id="vnme">Você</span></div>
+    <div class="vu" id="vuop"><i class="vdot"></i><span id="vnop">Oponente</span></div>
+    <div class="vctl"><button class="vb" id="vjoin">🎤 Entrar na voz</button><button class="vb alt" id="vmute" style="display:none">🎙️ Mic</button><button class="vb alt" id="vdeaf" style="display:none">🔊 Som</button><button class="vb red" id="vleave" style="display:none">✕</button></div>
+    <div class="vst" id="vst"></div>
+  </div><audio id="vaudio" autoplay playsinline></audio></div>
   <div id="view"></div>
 </div>
+<div id="rules" role="dialog" aria-label="Regras do jogo"><div class="rbox">
+  <button class="rx" id="rx" aria-label="Fechar">✕</button>
+  <div class="rview"><div class="rtrack" id="rtrack">
+    <div class="rslide"><div class="ri">🃏</div><h3>As cartas</h3><p>Cada jogador recebe 5 cartas. Ás vale 1, J, Q e K valem 10, e as outras valem o número delas. A soma das suas cartas é a sua pontuação.</p></div>
+    <div class="rslide"><div class="ri">🔄</div><h3>Troca</h3><p>Você pode trocar até 3 cartas na partida, no máximo 2 por turno, em até 3 turnos de 30 segundos. Também pode pular a troca.</p></div>
+    <div class="rslide"><div class="ri">🎲</div><h3>Par ou Ímpar</h3><p>Os dois escolhem Par ou Ímpar em 15 segundos. Dois dados são rolados, e quem acertar a soma escolhe Vida ou Morte, também em 15 segundos.</p></div>
+    <div class="rslide"><div class="ri">⚖️</div><h3>Vida ou Morte</h3><p><b>Vida:</b> vence a maior soma.<br><b>Morte:</b> vence a menor soma.<br>Soma igual é empate.</p></div>
+    <div class="rslide"><div class="ri">⏱</div><h3>Tempo e abandono</h3><p>Se o tempo acabar em qualquer escolha, ela é sorteada. Quem sair da mesa perde.</p></div>
+  </div></div>
+  <div class="rnav"><button id="rprev">◀</button><div class="rdots" id="rdots"></div><button id="rnext">▶</button></div>
+</div></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -893,6 +942,8 @@ function bindGame(S,i){
 function renderAll(){
   if(animating||animLock>0)return;
   mine=findMine();
+  if(!mine&&V.on)voiceStop();
+  paintVoice();
   const key=JSON.stringify(mine?[tables[mine.tid],animDone]:[tables,canWrite,ready,!!db,!!uid]);
   if(key===lastKey)return;lastKey=key;
   $('#top').style.display=mine?'none':'block';
@@ -950,6 +1001,173 @@ function paintSnd(){const s=Snd.state();$('#bm').classList.toggle('off',!s.music
 $('#bm').onclick=()=>{Snd.init();Snd.toggleMusic();paintSnd();};
 $('#bs').onclick=()=>{Snd.init();Snd.toggleSfx();paintSnd();Snd.sfx('click');};
 paintSnd();
+
+/* ============================================================
+   VOZ (VoIP) — WebRTC ponto a ponto, sinalização via Firestore
+   ============================================================ */
+/* Redes muito restritas (4G com NAT estrito) podem precisar de um servidor TURN. Se tiver um, adicione aqui:
+   {urls:'turn:SEU_SERVIDOR:3478',username:'usuario',credential:'senha'} */
+const ICE_SERVERS=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
+const V={on:false,pc:null,stream:null,unsub:null,gen:0,seat:0,tid:'',seen:new Set(),pend:[],hasRemote:false,ansSdp:'',
+  muted:false,deaf:false,connected:false,state:'',ac:null,an:{},timer:null,speak:{me:false,op:false}};
+
+function paintVoice(){
+  const vb=$('#voicebar');if(!vb)return;
+  vb.style.display=mine?'block':'none';
+  if(!mine)return;
+  const S=tables[mine.tid],me=S&&S.seats[mine.seat],op=S&&S.seats[1-mine.seat],on=V.on;
+  $('#vnme').textContent=me&&me.name?me.name:'Você';
+  $('#vnop').textContent=(op&&op.uid&&!op.left)?op.name:'Aguardando...';
+  $('#vume').className='vu'+(on?' in':'')+(V.speak.me?' sp':'')+(V.muted?' mt':'');
+  $('#vuop').className='vu'+(on&&V.connected?' in':'')+(V.speak.op?' sp':'');
+  $('#vjoin').style.display=on?'none':'';
+  ['#vmute','#vdeaf','#vleave'].forEach(x=>{$(x).style.display=on?'':'none';});
+  $('#vmute').textContent=V.muted?'🔇 Mutado':'🎙️ Mic';
+  $('#vdeaf').textContent=V.deaf?'🔇 Mudo':'🔊 Som';
+  $('#vst').textContent=on?V.state:'Converse por voz com o oponente durante a partida.';
+}
+
+function watchAudio(stream,who){
+  try{
+    if(!V.ac)V.ac=new (window.AudioContext||window.webkitAudioContext)();
+    if(V.ac.state==='suspended')V.ac.resume();
+    const src=V.ac.createMediaStreamSource(stream),an=V.ac.createAnalyser();an.fftSize=512;src.connect(an);V.an[who]=an;
+  }catch(e){}
+  if(!V.timer)V.timer=setInterval(()=>{
+    const buf=new Uint8Array(256);
+    ['me','op'].forEach(w=>{
+      const an=V.an[w];let on=false;
+      if(an){an.getByteTimeDomainData(buf);let m=0;for(const b of buf)m=Math.max(m,Math.abs(b-128));on=m>10;if(w==='me'&&V.muted)on=false;}
+      if(V.speak[w]!==on){V.speak[w]=on;paintVoice();}
+    });
+  },150);
+}
+
+function takeCands(pc,list){
+  (list||[]).forEach(str=>{
+    if(V.seen.has(str))return;V.seen.add(str);
+    let c;try{c=JSON.parse(str);}catch(e){return;}
+    if(V.hasRemote)pc.addIceCandidate(c).catch(()=>{});else V.pend.push(c);
+  });
+}
+function flushPend(pc){V.pend.splice(0).forEach(c=>pc.addIceCandidate(c).catch(()=>{}));}
+
+function makePC(){
+  if(V.pc){try{V.pc.close();}catch(e){}}
+  const pc=new RTCPeerConnection({iceServers:ICE_SERVERS});
+  V.pc=pc;V.seen=new Set();V.pend=[];V.hasRemote=false;V.ansSdp='';V.connected=false;
+  V.stream.getTracks().forEach(t=>pc.addTrack(t,V.stream));
+  pc.onicecandidate=e=>{
+    if(!e.candidate||V.pc!==pc)return;
+    fs.doc('voice/'+V.tid).update({['c'+V.seat]:firebase.firestore.FieldValue.arrayUnion(JSON.stringify(e.candidate))}).catch(()=>{});
+  };
+  pc.ontrack=e=>{const a=$('#vaudio');a.srcObject=e.streams[0];a.muted=V.deaf;a.play().catch(()=>{});watchAudio(e.streams[0],'op');};
+  pc.onconnectionstatechange=()=>{
+    if(V.pc!==pc)return;
+    const st=pc.connectionState,was=V.connected;
+    V.connected=st==='connected';
+    V.state=st==='connected'?'Conectado — pode falar':st==='connecting'?'Conectando...':st==='failed'?'Falha na conexão (a rede bloqueou o áudio direto)':st==='disconnected'?'Conexão instável...':V.state;
+    if(V.connected&&!was)Snd.sfx('sit');
+    paintVoice();
+  };
+  return pc;
+}
+
+/* assento 0 liga (oferta); assento 1 atende (resposta) */
+async function callerStart(){
+  const ref=fs.doc('voice/'+V.tid);V.gen=Date.now();const gen=V.gen;
+  await ref.set({gen,from:uid,c0:[],c1:[]});
+  const pc=makePC();
+  const offer=await pc.createOffer();await pc.setLocalDescription(offer);
+  await ref.update({offer:{type:offer.type,sdp:offer.sdp}});
+  V.state='Aguardando o oponente entrar na voz...';paintVoice();
+  V.unsub=ref.onSnapshot(async snap=>{
+    try{
+      const d=snap.data();if(!d||d.gen!==gen||V.pc!==pc)return;
+      if(d.answer&&d.ansGen===gen){
+        if(!V.hasRemote){V.hasRemote=true;V.ansSdp=d.answer.sdp;await pc.setRemoteDescription(d.answer);flushPend(pc);V.state='Conectando...';paintVoice();}
+        else if(d.answer.sdp!==V.ansSdp){   /* o oponente reentrou: recomeça a chamada */
+          if(V.unsub){V.unsub();V.unsub=null;}
+          callerStart().catch(()=>{});return;
+        }
+      }
+      if(V.hasRemote)takeCands(pc,d.c1);
+    }catch(e){}
+  });
+}
+function calleeStart(){
+  const ref=fs.doc('voice/'+V.tid);let handled=0;
+  V.state='Aguardando o oponente entrar na voz...';paintVoice();
+  V.unsub=ref.onSnapshot(async snap=>{
+    try{
+      const d=snap.data();if(!d||!d.offer)return;
+      if(d.gen!==handled){
+        handled=d.gen;V.gen=d.gen;
+        const pc=makePC();V.state='Conectando...';paintVoice();
+        await pc.setRemoteDescription(d.offer);V.hasRemote=true;flushPend(pc);
+        const ans=await pc.createAnswer();await pc.setLocalDescription(ans);
+        await ref.update({answer:{type:ans.type,sdp:ans.sdp},ansGen:d.gen});
+      }
+      if(V.pc&&V.hasRemote)takeCands(V.pc,d.c0);
+    }catch(e){}
+  });
+}
+
+async function voiceStart(){
+  if(V.on||!mine||!fs)return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.RTCPeerConnection){toast('Este navegador/endereço não permite microfone (use HTTPS).');return;}
+  try{
+    V.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
+  }catch(e){toast('Não foi possível usar o microfone. Libere a permissão no navegador.');return;}
+  V.on=true;V.tid=mine.tid;V.seat=mine.seat;V.muted=false;V.state='Iniciando...';
+  watchAudio(V.stream,'me');paintVoice();
+  try{
+    if(V.seat===0)await callerStart();else calleeStart();
+  }catch(e){toast('Falha ao iniciar a voz: '+((e&&e.message)||e));voiceStop();}
+}
+function voiceStop(){
+  const wasCaller=V.on&&V.seat===0&&V.tid;
+  if(V.unsub){V.unsub();V.unsub=null;}
+  if(V.pc){try{V.pc.close();}catch(e){}V.pc=null;}
+  if(V.stream){V.stream.getTracks().forEach(t=>t.stop());V.stream=null;}
+  clearInterval(V.timer);V.timer=null;
+  if(V.ac){try{V.ac.close();}catch(e){}V.ac=null;}
+  V.an={};V.speak={me:false,op:false};
+  const a=$('#vaudio');if(a)a.srcObject=null;
+  if(wasCaller&&fs)fs.doc('voice/'+V.tid).delete().catch(()=>{});
+  V.on=false;V.connected=false;V.state='';
+  paintVoice();
+}
+$('#vjoin').onclick=()=>{Snd.init();voiceStart();};
+$('#vleave').onclick=()=>voiceStop();
+$('#vmute').onclick=()=>{V.muted=!V.muted;if(V.stream)V.stream.getAudioTracks().forEach(t=>{t.enabled=!V.muted;});paintVoice();};
+$('#vdeaf').onclick=()=>{V.deaf=!V.deaf;$('#vaudio').muted=V.deaf;paintVoice();};
+addEventListener('pagehide',()=>{if(V.on)voiceStop();});
+
+/* ---------- regras (tela flutuante) ---------- */
+(function(){
+  const box=$('#rules'),track=$('#rtrack'),dots=$('#rdots'),prev=$('#rprev'),next=$('#rnext');
+  const N=track.children.length;let cur=0;
+  dots.innerHTML=Array.from({length:N},()=>'<i></i>').join('');
+  function go(k){
+    cur=Math.max(0,Math.min(N-1,k));
+    track.style.transform=`translateX(-${cur*100}%)`;
+    [...dots.children].forEach((d,x)=>d.classList.toggle('on',x===cur));
+    prev.disabled=cur===0;
+    next.textContent=cur===N-1?'Entendi ✓':'▶';
+  }
+  function open(){go(0);box.classList.add('on');}
+  function close(){box.classList.remove('on');}
+  prev.onclick=()=>{Snd.sfx('click');go(cur-1);};
+  next.onclick=()=>{Snd.sfx('click');if(cur===N-1)close();else go(cur+1);};
+  $('#rx').onclick=close;
+  box.addEventListener('pointerdown',e=>{if(e.target===box)close();});
+  $('#br').onclick=()=>{Snd.init();open();};
+  let x0=null;
+  track.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;},{passive:true});
+  track.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40)go(cur+(dx<0?1:-1));},{passive:true});
+  open();   /* aparece sempre que alguém abre o site */
+})();
 
 /* ---------- início ---------- */
 async function boot(){
