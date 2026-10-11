@@ -150,6 +150,9 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .fw.vida{color:#f0d98a;text-shadow:0 0 30px #ffe58a,0 3px 0 #000a}
 .fw.morte{color:#ff4357;text-shadow:0 0 30px #c8202f,0 3px 0 #000a}
 .fw.turn{font-size:2.2rem;top:30%}
+.rvdark{position:fixed;inset:0;z-index:90;pointer-events:auto;background:radial-gradient(ellipse at center,#000000c8 0%,#000000f2 80%)}
+.rvtxt{position:fixed;left:0;right:0;top:40%;z-index:95;text-align:center;pointer-events:none;font:700 1.3rem Georgia,serif;letter-spacing:.14em;color:#e8c35a;text-shadow:0 0 18px #e8c35a88}
+.rvflash{position:fixed;inset:0;z-index:98;pointer-events:none}
 .fw.par{font-size:2.4rem}
 .cf{position:fixed;top:0;width:8px;height:14px;z-index:90;pointer-events:none;border-radius:2px}
 .vig{position:fixed;inset:0;z-index:80;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,#c8202fcc 100%)}
@@ -882,6 +885,7 @@ const Snd=(()=>{
     turn:()=>{T(660,{d:.25,v:.1});T(990,{t:.1,d:.3,v:.08});},
     phase:()=>{T(110,{d:.8,v:.3,to:75,type:'sawtooth'});T(220,{t:.05,d:.6,v:.1});},
     tick:()=>T(1000,{d:.05,v:.12,type:'square'}),
+    beat:()=>{T(62,{d:.16,v:.45,to:40});T(58,{t:.2,d:.2,v:.32,to:38});},
     alarm:()=>{T(440,{d:.3,v:.18,type:'sawtooth',to:300});T(330,{t:.12,d:.3,v:.12,type:'square',to:220});},
     dice:()=>{for(let k=0;k<16;k++){N({t:k*.085+Math.random()*.03,f:1500+Math.random()*2500,d:.04,v:.15,q:3});if(k%3===0)T(300+Math.random()*200,{t:k*.085,d:.03,v:.05,type:'square'});}},
     diceLand:()=>{T(120,{d:.2,v:.3,to:55});N({f:1200,d:.09,v:.2});},
@@ -1543,9 +1547,9 @@ function betRowHTML(S,i){
 }
 function payTxt(S,i){
   const p=S.payout;if(!p)return '';
-  if(p.carried)return '<br>🪙 Empate: o pote acumula para a próxima rodada.';
-  if(p.w<0)return '<br>🪙 Empate: as apostas foram devolvidas.';
-  return p.w===i?`<br>🪙 Você ganhou <b>${p.st}</b> moedas!`:`<br>🪙 Você perdeu ${p.st} moedas.`;
+  if(p.carried)return '<br>🪙 Empate: pote acumulado.';
+  if(p.w<0)return '<br>🪙 Empate: apostas devolvidas.';
+  return p.w===i?`<br>🪙 +${p.st}`:`<br>🪙 −${p.st}`;
 }
 /* janelas de aposta e de desistência (ficam fora da tela do jogo para não sumirem a cada atualização) */
 function paintBet(){
@@ -1707,11 +1711,11 @@ function gameHTML(S,i){
   const bar=`<div class="topbar"><span class="pill">${isPriv(S.id)?'Privada':'Mesa '+k}${inTrade?' · Turno '+S.turn+' de 3':''}${getRules(S).series>1?' · Rodada '+(S.round||1)+'/'+getRules(S).series+' ('+S.wins[0]+'x'+S.wins[1]+')':''}</span><span class="pill">${esc(me.name)}</span>${timed?'<span class="pill timer" id="tm"></span>':''}</div>`+(timed?`<div class="tbar" id="tbar"><i id="tbf"></i></div>`:'');
   const leave=`<button class="btn ghost leave" id="leave">${S.status==='playing'?'Abandonar partida':((S.status==='open'||S.status==='starting')?'Sair da mesa':'Voltar ao lobby')}</button>`;
   const G=(top,mid,bot)=>`<div class="gm"><div class="gtop">${top}</div><div class="gmid">${mid||''}</div><div class="gbot">${bot||''}</div></div>`;
-  const ev=(!holdP&&!rolling&&S.events&&S.events.length)?`<div class="events">${S.events.slice(-2).map(esc).join('<br>')}</div>`:'';
+  const ev=(!holdP&&!rolling&&S.events&&S.events.length)?`<div class="events">${S.events.slice(-1).map(esc).join('')}</div>`:'';
 
-  if(S.status==='starting')return G(bar+betRowHTML(S,i),`<div class="wait soft"><h2>${esc(me.name)} x ${esc(opp.name)}</h2><p class="sub">A partida já vai começar. Se quiser, altere a aposta agora.</p><p class="sub" id="cd" style="color:var(--gold);font-weight:700"></p></div>`,leave);
+  if(S.status==='starting')return G(bar+betRowHTML(S,i),`<div class="wait soft"><h2>${esc(me.name)} x ${esc(opp.name)}</h2><p class="sub" id="cd" style="color:var(--gold);font-weight:700"></p></div>`,leave);
   if(S.status==='open'&&isPriv(S.id))return G(bar+betRowHTML(S,i),privWaitHTML(S,i),leave);
-  if(S.status==='open')return G(bar+betRowHTML(S,i),`<div class="wait"><h2>Aguardando oponente</h2><p class="sub">A partida começa quando outra pessoa sentar na mesa ${k}.</p><button class="btn ghost" id="botbtn" ${(lockd()||!wallet.ok)?'disabled':''}>Jogar com um bot</button></div>`,leave);
+  if(S.status==='open')return G(bar+betRowHTML(S,i),`<div class="wait"><h2>Aguardando oponente</h2><button class="btn ghost" id="botbtn" ${(lockd()||!wallet.ok)?'disabled':''}>Jogar com um bot</button></div>`,leave);
   if(S.status==='abandoned')return G(bar,`<div class="banner ${S.payout&&S.payout.w<0?'draw':'win'}">${S.payout&&S.payout.w<0?'Partida encerrada':'Vitória por W.O.'}<small>${esc(opp.name)} saiu da mesa.${payTxt(S,i)}</small></div>`,`<button class="btn" id="wait2">Aguardar novo oponente</button>`+leave);
 
   const reveal=S.status==='finished';
@@ -1726,49 +1730,49 @@ function gameHTML(S,i){
   if(S.phase==='trade'){
     if(getRules(S).reveal==='pick'&&S.turn===1&&(rvOf(S)[0]<0||rvOf(S)[1]<0)){
       const dn=rvOf(S)[1-i]>=0;
-      return G(top,myHand()+sumBox+`<p class="hint">${dn?'Você já escolheu. Aguardando <b>'+esc(opp.name)+'</b> escolher a sua carta revelada...':'<b>Toque numa carta do oponente</b> para revelá-la. Ela ficará virada para cima e não poderá ser trocada durante toda a partida.'}</p>`,leave);
+      return G(top,myHand()+sumBox+`<p class="hint">${dn?'Aguardando <b>'+esc(opp.name)+'</b>...':'<b>Toque numa carta do oponente</b> para revelá-la.'}</p>`,leave);
     }
-    const oppState=opp.acted?`<b>${esc(opp.name)}</b> já jogou neste turno.`:`<b>${esc(opp.name)}</b> ainda está escolhendo...`;
+    const oppState=opp.acted?`<b>${esc(opp.name)}</b> já jogou`:`<b>${esc(opp.name)}</b> está escolhendo...`;
     if(!me.acted&&!me.done){
       const max=maxTrade(S,i);
       const hand=me.hand.map((n,x)=>`<button class="slot${x===rvOf(S)[i]?' locked':''}" data-i="${x}" aria-label="carta ${x+1}${x===rvOf(S)[i]?' (revelada, não pode ser trocada)':''}">${cardHTML(cardOf(n))}</button>`).join('');
       return G(top,`<div class="hand" id="hand">${hand}</div>`+sumBox+
-        `<p class="hint">Toque nas cartas para trocar (de 1 a <b>${max}</b>) · trocas usadas: ${me.traded}/${getRules(S).maxT}</p><p class="hint">${oppState}</p>`,
+        `<p class="hint">Troque até <b>${max}</b> · ${me.traded}/${getRules(S).maxT} · ${oppState}</p>`,
         `<button class="btn" id="trade" disabled>Trocar 0 cartas</button><button class="btn ghost" id="direct">Ir direto para Par ou Ímpar</button>`+leave);
     }
-    const msg=me.done&&!me.lastNew.length?'Você está pronto para o Par ou Ímpar.':'Você já jogou neste turno.';
-    return G(top,myHand(new Set(me.lastNew||[]))+sumBox+`<p class="hint">${msg}</p><p class="hint">${oppState}</p>`,leave);
+    const msg=me.done&&!me.lastNew.length?'Você está pronto.':'Você já jogou.';
+    return G(top,myHand(new Set(me.lastNew||[]))+sumBox+`<p class="hint">${msg} · ${oppState}</p>`,leave);
   }
   if(S.phase==='parity'){
-    if(holdP)return G(top,myHand()+sumBox+`<p class="hint">Sorteando quem escolhe Par ou Ímpar...</p>`,leave);
+    if(holdP)return G(top,myHand()+sumBox+`<p class="hint">Sorteando...</p>`,leave);
     if(pickerOf(S)===i)return G(top,myHand()+sumBox+
-      `<p class="hint"><b>Você foi sorteado!</b> Só você escolhe, e <b>${esc(opp.name)}</b> fica com a opção restante. Se o tempo acabar, a escolha é sorteada.</p>`,
+      `<p class="hint"><b>Você escolhe:</b> Par ou Ímpar</p>`,
       `<div class="row2"><button class="btn vida" id="par">PAR</button><button class="btn morte" id="imp">ÍMPAR</button></div>`+leave);
-    return G(top,myHand()+sumBox+`<p class="hint"><b>${esc(opp.name)}</b> foi sorteado para escolher Par ou Ímpar. Você ficará com a opção restante. Aguarde...</p>`,leave);
+    return G(top,myHand()+sumBox+`<p class="hint"><b>${esc(opp.name)}</b> está escolhendo...</p>`,leave);
   }
   /* choose / result: tudo na mesma tela, dados no centro da mesa */
   const total=S.dice[0]+S.dice[1];
   if(rolling)return G(top,myHand()+sumBox+`<div class="dcap" id="dcap">Rolando os dados...</div>`,leave);
-  const cap=`<div class="dcap" id="dcap">Soma ${total}: <b>${total%2===0?'PAR':'ÍMPAR'}</b>. ${esc(S.seats[S.win].name)} acertou.</div>`;
+  const cap=`<div class="dcap" id="dcap">Soma ${total}: <b>${total%2===0?'PAR':'ÍMPAR'}</b></div>`;
   if(S.phase==='choose'){
-    if(S.fm)return G(top,myHand()+sumBox+cap+`<p class="hint">Modo da rodada: <b>${S.fm.toUpperCase()}</b> (${S.fm==='vida'?'vence a maior soma':'vence a menor soma'}).</p>`,leave);
+    if(S.fm)return G(top,myHand()+sumBox+cap+`<p class="hint"><b>${S.fm.toUpperCase()}</b> · ${S.fm==='vida'?'maior soma vence':'menor soma vence'}</p>`,leave);
     if(S.win===i)return G(top,myHand()+sumBox+cap+
-      `<p class="hint">Você acertou! Escolha <b>Vida</b> (vence a maior soma) ou <b>Morte</b> (vence a menor soma). Se o tempo acabar, a escolha é sorteada.</p>`,
+      `<p class="hint"><b>Você acertou!</b> Escolha:</p>`,
       `<div class="row2"><button class="btn vida" id="v">VIDA<small>maior soma</small></button><button class="btn morte" id="m">MORTE<small>menor soma</small></button></div>`+leave);
-    return G(top,myHand()+sumBox+cap+`<p class="hint"><b>${esc(opp.name)}</b> acertou e está escolhendo Vida ou Morte...</p>`,leave);
+    return G(top,myHand()+sumBox+cap+`<p class="hint"><b>${esc(opp.name)}</b> está escolhendo...</p>`,leave);
   }
   /* resultado */
   const sums=S.seats.map((x,k)=>seatSum(S,k));
   const rule=S.choice==='vida'?'VIDA: vence a maior soma':'MORTE: vence a menor soma';
-  const reason=`${esc(S.seats[S.win].name)} acertou o ${total%2===0?'par':'ímpar'}${S.fm?'. Modo da rodada —':' e escolheu'} ${rule}. `+(S.winner<0?'As somas são iguais.':`Somas: ${esc(S.seats[0].name)} ${sums[0]} x ${sums[1]} ${esc(S.seats[1].name)}.`)+payTxt(S,i);
+  const reason=`${S.choice==='vida'?'VIDA':'MORTE'} · ${esc(S.seats[0].name)} ${sums[0]} x ${sums[1]} ${esc(S.seats[1].name)}`+payTxt(S,i);
   const banner=S.winner<0?`<div class="banner draw">Empate<small>${reason}</small></div>`
     :`<div class="banner win">${esc(S.seats[S.winner].name)} venceu!<small>${reason}</small></div>`;
   const rm=S.rematch||[false,false];
   let again;
   if(opp.left||!opp.uid)again=`<p class="hint">${esc(opp.name)} saiu da mesa.</p><button class="btn" id="wait2">Aguardar novo oponente</button>`;
   else if(rm[i])again=`<button class="btn" disabled>Aguardando ${esc(opp.name)}...</button>`;
-  else again=(rm[1-i]?`<p class="hint"><b>${esc(opp.name)}</b> quer jogar novamente!</p>`:'')+`<button class="btn" id="again">${S.sn?'Próxima rodada':'Jogar novamente'}</button>`;
-  const RL=getRules(S),ser=RL.series>1?`<p class="hint">Série melhor de ${RL.series}: ${esc(S.seats[0].name)} ${S.wins[0]} x ${S.wins[1]} ${esc(S.seats[1].name)}${S.sn?' · próxima: rodada '+((S.round||1)+1):' · fim da série'}</p>`:'';
+  else again=(rm[1-i]?`<p class="hint"><b>${esc(opp.name)}</b> quer jogar de novo</p>`:'')+`<button class="btn" id="again">${S.sn?'Próxima rodada':'Jogar novamente'}</button>`;
+  const RL=getRules(S),ser=RL.series>1?`<p class="hint">Série: ${esc(S.seats[0].name)} ${S.wins[0]} x ${S.wins[1]} ${esc(S.seats[1].name)}</p>`:'';
   return G(top,myHand()+sumBox+banner+ser,`<div id="rmbox">${again}</div>`+leave);
 }
 
@@ -1797,12 +1801,12 @@ function flipIn(slot,dur,delay){
 
 /* carta nova: do baralho até o lugar dela na mão */
 function flyIn(el,from,o={}){
-  const delay=o.delay||0,dur=o.dur||480;
+  const delay=o.delay||0,dur=o.dur||IN_MS;
   if(!el||!el.animate||!from)return Promise.resolve();
   const t=el.getBoundingClientRect();
   const dx=from.left+from.width/2-(t.left+t.width/2),dy=from.top+from.height/2-(t.top+t.height/2),s=from.width/t.width;
   el.style.zIndex=30;
-  const a=el.animate([{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(-10deg)`},{transform:'none'}],{duration:dur,delay,easing:'cubic-bezier(.2,.8,.25,1)',fill:'backwards'});
+  const a=el.animate([{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(-10deg)`},{transform:'none'}],{duration:dur,delay,easing:'cubic-bezier(.3,.7,.2,1)',fill:'backwards'});
   if(o.face){flipIn(el,dur,delay);setTimeout(()=>Snd.sfx('flip'),delay+dur*.55);}
   setTimeout(()=>Snd.sfx('deal'),delay);
   const clear=()=>{el.style.zIndex='';};
@@ -1810,6 +1814,7 @@ function flyIn(el,from,o={}){
 }
 
 /* carta descartada: da mão até a pilha de descarte */
+const OUT_MS=950,IN_MS=1000;   /* velocidade do descarte e da compra (ms) */
 function outFlight(html,r,delay,flip){
   const tgt=$('#disc');if(!tgt)return Promise.resolve();
   const g=document.createElement('div');g.className='flyc';
@@ -1817,13 +1822,13 @@ function outFlight(html,r,delay,flip){
   g.innerHTML=html;document.body.appendChild(g);
   const t=tgt.getBoundingClientRect();
   const dx=t.left+t.width/2-(r.left+r.width/2),dy=t.top+t.height/2-(r.top+r.height/2),s=t.width/r.width,rot=Math.random()*40-20;
-  const a=g.animate([{transform:'none'},{transform:`translate(${dx*.45}px,${dy*.45-40}px) scale(${(1+s)/2}) rotate(${rot/2}deg)`,offset:.45},{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${rot}deg)`}],{duration:460,delay,easing:'cubic-bezier(.35,.1,.4,1)',fill:'both'});
+  const a=g.animate([{transform:'none'},{transform:`translate(${dx*.45}px,${dy*.45-40}px) scale(${(1+s)/2}) rotate(${rot/2}deg)`,offset:.45},{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(${rot}deg)`}],{duration:OUT_MS,delay,easing:'cubic-bezier(.45,.05,.25,1)',fill:'both'});
   if(flip){
     const card=g.querySelector('.card');
     if(card){
       const cover=document.createElement('div');cover.className='back';g.firstChild.appendChild(cover);
-      cover.animate([{transform:'scaleX(0)'},{transform:'scaleX(0)',offset:.5},{transform:'scaleX(1)'}],{duration:460,delay,fill:'both'});
-      card.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)',offset:.5},{transform:'scaleX(0)'}],{duration:460,delay,fill:'both'});
+      cover.animate([{transform:'scaleX(0)'},{transform:'scaleX(0)',offset:.5},{transform:'scaleX(1)'}],{duration:OUT_MS,delay,fill:'both'});
+      card.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)',offset:.5},{transform:'scaleX(0)'}],{duration:OUT_MS,delay,fill:'both'});
     }
   }
   setTimeout(()=>Snd.sfx('deal'),delay);
@@ -1876,7 +1881,7 @@ function animDeal(){
   const deckR=rectOf($('#deck')),jobs=[];let n=0;
   const mineEls=[...document.querySelectorAll('#hand .slot')],oppEls=[...document.querySelectorAll('#opphand .slot')];
   for(let k=0;k<Math.max(mineEls.length,oppEls.length);k++){
-    [oppEls[k],mineEls[k]].forEach((el,w)=>{if(el)jobs.push(flyIn(el,deckR,{delay:n*120,dur:520,face:w===1}));n++;});
+    [oppEls[k],mineEls[k]].forEach((el,w)=>{if(el)jobs.push(flyIn(el,deckR,{delay:n*180,dur:850,face:w===1}));n++;});
   }
   return Promise.all(jobs);
 }
@@ -1892,16 +1897,42 @@ function animTrade(isMe,a,b,before){
     discShown-=outs.length;
     outs.forEach((x,k)=>{
       const html=isMe?`<div class="gslot">${cardHTML(cardOf(a.hand[x]))}</div>`:`<div class="gslot"><div class="back"></div></div>`;
-      jobs.push(outFlight(html,rects[x],k*100,isMe));
+      jobs.push(outFlight(html,rects[x],k*220,isMe));
     });
-    inDelay=outs.length?380:0;
-  }
+    inDelay=outs.length?800:0;
+  }else inDelay=450;
   const els=[...document.querySelectorAll(isMe?'#hand .slot':'#opphand .slot')];
-  idx.forEach((x,k)=>{if(els[x])jobs.push(flyIn(els[x],deckR,{delay:inDelay+k*110,dur:480,face:isMe}));});
+  idx.forEach((x,k)=>{if(els[x])jobs.push(flyIn(els[x],deckR,{delay:inDelay+k*250,dur:IN_MS,face:isMe}));});
   return Promise.all(jobs);
 }
 
 /* resultado: palavra VIDA/MORTE, mão do oponente vira, soma sobe, banner + fanfarra */
+async function suspenseReveal(c){
+  const o=document.createElement('div');o.className='rvdark';
+  const t=document.createElement('div');t.className='rvtxt';t.textContent='O destino está selado...';
+  document.body.appendChild(o);document.body.appendChild(t);
+  if(o.animate)o.animate([{opacity:0},{opacity:1}],{duration:700,fill:'both'});
+  if(t.animate)t.animate([{opacity:0},{opacity:1}],{duration:700,delay:300,fill:'both'});
+  /* batimentos cada vez mais rápidos */
+  const gaps=[0,1000,1900,2650,3250,3750,4150];
+  gaps.forEach((g,k)=>setTimeout(()=>{
+    Snd.sfx('beat');
+    if(t.animate)t.animate([{transform:'scale(1)'},{transform:'scale(1.12)',offset:.25},{transform:'scale(1)'}],{duration:320});
+    if(o.animate&&k>2)o.animate([{filter:'brightness(1)'},{filter:'brightness(1.5)',offset:.2},{filter:'brightness(1)'}],{duration:300});
+  },g+500));
+  await sleep(4900);
+  if(t.animate)await t.animate([{opacity:1},{opacity:0}],{duration:250,fill:'both'}).finished.catch(()=>{});
+  t.remove();
+  await sleep(450);   /* silêncio antes da revelação */
+  const f=document.createElement('div');f.className='rvflash';f.style.background=c==='vida'?'#f0d98a':'#c8202f';
+  document.body.appendChild(f);
+  if(f.animate)f.animate([{opacity:.85},{opacity:0}],{duration:700}).onfinish=()=>f.remove();else f.remove();
+  Snd.sfx(c==='vida'?'vida':'morte');
+  flashWord(c==='vida'?'VIDA':'MORTE',c==='vida'?'vida':'morte');
+  await sleep(1900);
+  if(o.animate)await o.animate([{opacity:1},{opacity:0}],{duration:600,fill:'both'}).finished.catch(()=>{});
+  o.remove();
+}
 async function animResult(S,i){
   const banner=document.querySelector('.banner');
   if(banner){banner.style.animation='none';banner.style.opacity='0';}
@@ -1911,9 +1942,8 @@ async function animResult(S,i){
   document.querySelectorAll('#opphand .slot').forEach(sl=>{const c=document.createElement('div');c.className='back';sl.appendChild(c);c.dataset.cv='1';});
   await sceneCard('','HORA DA VERDADE','Vamos revelar as cartas...',3500);
   document.querySelectorAll('#opphand .slot .back[data-cv]').forEach(c=>c.remove());
-  Snd.sfx(S.choice==='vida'?'vida':'morte');
-  flashWord(S.choice==='vida'?'VIDA':'MORTE',S.choice==='vida'?'vida':'morte');
-  const t=1500,gap=300;
+  await suspenseReveal(S.choice);
+  const t=300,gap=300;
   document.querySelectorAll('#opphand .slot').forEach((sl,x)=>{flipIn(sl,700,t+x*gap);setTimeout(()=>Snd.sfx('flip'),t+x*gap+350);});
   countUp(os,seatSum(S,1-i),t+5*gap+300,800);
   await sleep(t+5*gap+1300);
@@ -1937,7 +1967,7 @@ async function runDice(S){
     const me=mine?mine.seat:0,pk=pickerOf(S),pp=S.seats[pk].parity,op=S.seats[1-pk].parity;
     const pn=pk===me?'Você':S.seats[pk].name;
     const other=pk===me?esc(S.seats[1-pk].name)+' fica':'Você fica';
-    await sceneCard('',`${pn} escolheu ${pp==='par'?'PAR':'ÍMPAR'}`,`${other} com ${op==='par'?'PAR':'ÍMPAR'}.<br>Hora de rolar os dados!`,3600);
+    await sceneCard('',`${pn} escolheu ${pp==='par'?'PAR':'ÍMPAR'}`,'Hora de rolar os dados!',3600);
     const wr=[...document.querySelectorAll('#dice .dw')],cap=$('#dcap');
     Snd.sfx('dice');
     wr.forEach((w,k)=>w.animate([{transform:`translate(${k?150:-150}px,-140px) rotate(${k?560:-560}deg) scale(.5)`,opacity:0},{transform:'translate(0,0) rotate(0deg) scale(1)',opacity:1}],{duration:950,delay:k*140,easing:'cubic-bezier(.2,.9,.3,1.3)',fill:'backwards'}));
@@ -1956,7 +1986,7 @@ async function runDice(S){
     await sleep(1600);
     if(S.phase==='choose'){
       const meSeat=mine?mine.seat:0;
-      if(S.fm)await sceneCard('',S.fm.toUpperCase(),'Modo definido<br>para esta rodada',3200,'vm');else await sceneCard('','VIDA OU MORTE',S.win===meSeat?'Você acertou!<br>A decisão é sua.':`${esc(S.seats[S.win].name)} acertou<br>e vai decidir.`,4000,'vm');
+      if(S.fm)await sceneCard('',S.fm.toUpperCase(),'',3200,'vm');else await sceneCard('','VIDA OU MORTE',S.win===meSeat?'Você acertou!<br>A decisão é sua.':`${esc(S.seats[S.win].name)} acertou<br>e vai decidir.`,4000,'vm');
     }
   }finally{animDone=S.rollAt;animating=false;lastKey='';renderAll();}
 }
@@ -1984,7 +2014,7 @@ function transition(p,S,i,before){
   if(p&&p.status==='playing'&&S.status==='finished')tasks.push(animResult(S,i));
   if(p&&p.status==='playing'&&S.status==='abandoned'){Snd.sfx('win');Snd.duck(2500);}
   setDisc(discShown);
-  if(tasks.length)lock(Promise.all(tasks),(p&&p.status==='playing'&&S.status==='finished')?14000:5000);
+  if(tasks.length)lock(Promise.all(tasks),(p&&p.status==='playing'&&S.status==='finished')?24000:5000);
 }
 const musicFor=S=>(S&&S.status==='playing')?((S.phase==='parity'||S.phase==='choose')?'tense':'game'):'calm';
 
@@ -2034,7 +2064,7 @@ function bindTrade(S,i){
     /* as cartas já saem voando para a mesa enquanto a jogada é salva */
     const flights=idx.map((x,k)=>{
       const r=slots[x].getBoundingClientRect();slots[x].style.visibility='hidden';
-      return outFlight(`<div class="gslot">${cardHTML(cardOf(hand[x]))}</div>`,r,k*100,true);
+      return outFlight(`<div class="gslot">${cardHTML(cardOf(hand[x]))}</div>`,r,k*220,true);
     });
     btn.disabled=true;$('#direct').disabled=true;
     localOut=true;
@@ -2090,7 +2120,7 @@ function renderAll(force){
   /* guarda as posições atuais das cartas antes de redesenhar (para os voos) */
   const q=s=>[...document.querySelectorAll(s)].map(e=>e.getBoundingClientRect());
   const before={me:q('#hand .slot'),opp:q('#opphand .slot')};
-  v.innerHTML=gameHTML(S,i);bindGame(S,i);
+  v.innerHTML=gameHTML(S,i);bindGame(S,i);paintTimerNow();
   const p=(prev&&prev.id===S.id)?prev:null;
   prev=S;
   transition(p,S,i,before);
@@ -2100,6 +2130,16 @@ function renderAll(force){
 
 /* ---------- temporizador ---------- */
 let tickKey='',lastTick=-1;
+function paintTimerNow(){
+  if(!mine)return;const S=tables[mine.tid];
+  if(!S||S.status!=='playing'||(S.phase!=='trade'&&S.phase!=='parity'&&S.phase!=='choose'))return;
+  const total=S.phase==='trade'?30:15,hold=S.prop||S.refund,ms=S.deadline-(hold?hold.ts:Date.now());
+  const left=Math.min(total,Math.ceil(ms/1000)),low=left<=(S.phase==='trade'?10:5);
+  const el=$('#tm'),bf=$('#tbf'),tb=$('#tbar');
+  if(el){el.textContent=(hold?'Pausado · ':'')+Math.max(0,left)+'s';el.classList.toggle('low',low);}
+  if(bf){bf.style.transition='none';bf.style.width=Math.max(0,Math.min(100,ms/(total*10)))+'%';void bf.offsetWidth;bf.style.transition='';}
+  if(tb)tb.classList.toggle('low',low);
+}
 setInterval(()=>{
   if(!mine)return;
   const S=tables[mine.tid];
