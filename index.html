@@ -12,6 +12,8 @@
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
+  --glowG:inset 0 0 12px #e8c35a77,0 0 4px 1px #e8c35aee,0 0 12px 3px #e8c35a99,0 0 22px 7px #e8c35a44;   /* brilho dourado: de dentro para fora, sumindo */
+  --glowR:inset 0 0 12px #ff8d9777,0 0 4px 1px #ff8d97ee,0 0 12px 3px #ff8d9799,0 0 22px 7px #ff8d9744;   /* mesmo brilho, vermelho claro */
   --felt:#0f4a34; --felt2:#072a1d; --gold:#e8c35a; --red:#c8202f;
   --ink:#f4efe2; --muted:#b9c9bf; --paper:#fbf8f0;
 }
@@ -58,8 +60,8 @@ details ul{padding-left:18px;margin:8px 0}
   container-type:inline-size;cursor:pointer;transition:transform .15s;font:inherit}
 .slot.static{cursor:default}
 .slot.sel{transform:translateY(-14px)}
-.slot.sel .card{outline:3px solid var(--gold);outline-offset:1px}
-.slot.new .card{box-shadow:0 0 0 3px var(--gold),0 0 16px #e8c35a99}
+.slot.sel .card{box-shadow:var(--glowG)}
+.slot.new .card{box-shadow:var(--glowG)}
 .card{position:absolute;inset:0;background:var(--paper);border-radius:8cqw;border:1px solid #cfc8b4;
   box-shadow:0 2px 6px rgba(0,0,0,.5);color:#111;font-family:Georgia,"Times New Roman",serif;overflow:hidden;text-align:left}
 .card.r{color:#c0182a}
@@ -275,7 +277,7 @@ input[type=text]::placeholder{color:#7f9a8b}
 .gm .tbar{margin:-2px 0 4px}
 .gm .wait{margin:auto}
 .hand.mini5 .slot.sel{transform:translateY(-6px)}
-.slot.sel .back{outline:3px solid var(--gold);outline-offset:1px;box-shadow:0 0 14px #e8c35acc}
+.slot.sel .back{box-shadow:var(--glowG)}
 /* ===== moedas e apostas ===== */
 #sndbar{align-items:center}
 #coins{margin-right:auto;font-weight:700;color:var(--gold);display:none}
@@ -422,9 +424,9 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
 .rlo{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
 .rlo button{border:1px solid #e8c35a66;background:#0007;color:var(--ink);border-radius:99px;padding:5px 11px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:var(--fb)}
 .rlo button.on{background:var(--gold);color:#2a1d00;border-color:var(--gold)}
-.slot.locked .card{box-shadow:0 0 0 3px #e5283a,0 0 16px #ff3b4acc}   /* carta revelada: borda vermelha com brilho que some */
+.slot.locked .card{box-shadow:var(--glowR)}   /* carta revelada: brilho vermelho claro que some para fora */
 .hand.pk .slot{cursor:pointer}
-.hand.pk .slot .back{box-shadow:0 0 0 2px var(--gold),0 0 14px #e8c35acc}
+.hand.pk .slot .back{box-shadow:var(--glowG)}
 .acebtn{margin-left:8px;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--gold);background:#0007;color:var(--gold);cursor:pointer}
 </style>
 </head>
