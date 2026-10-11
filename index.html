@@ -1959,7 +1959,7 @@ function privWaitHTML(S,i){
     msg=st==='declined'?`<b>@${to}</b> recusou o convite.`:st==='expired'?'O convite expirou.':st==='failed'?`<b>@${to}</b> não conseguiu entrar na mesa.`:st==='cancelled'?'Convite cancelado.':'Aguardando alguém entrar na mesa.';
     btns=`<button class="btn" id="inew">Convidar outro jogador</button>`;
   }
-  return `<div class="wait soft"><h2>Mesa privada</h2><p class="sub">${msg}</p><p class="hint">Aposta de 🪙${S.bet} cada. Só quem for convidado consegue entrar.</p>${btns}</div>`;
+  return `<div class="wait soft"><h2>Mesa privada</h2><p class="sub">${msg}</p><p class="hint">Aposta de 🪙${S.bet} cada. Só quem for convidado consegue entrar.</p>${btns}${isAdmin()?`<button class="btn ghost" id="botbtn" ${(lockd()||!wallet.ok)?'disabled':''}>Jogar com um bot</button>`:''}</div>`;
 }
 function gameHTML(S,i){
   const me=S.seats[i],opp=S.seats[1-i];
@@ -3810,7 +3810,7 @@ async function admRemove(r){
 /* ---------- bot: jogador virtual para quando não há ninguém na mesa ---------- */
 function openBotBox(){
   if(!mine)return;const S=tables[mine.tid];
-  if(!S||S.status!=='open'||isPriv(S.id))return;
+  if(!S||S.status!=='open'||(isPriv(S.id)&&!isAdmin()))return;
   $('#bot_txt').innerHTML='Você joga contra um bot, com aposta de <b>🪙'+(S.bet||BASE_BET[S.id]||50)+'</b> cada, como numa partida normal. Se perder, perde essas moedas. O bot nunca fica sem moedas.';
   $('#bot_yes').disabled=false;
   $('#w_bot').classList.add('on');
@@ -3827,7 +3827,7 @@ async function startBotGame(){
     const res=await fs.runTransaction(async tx=>{
       const snap=await tx.get(ref);if(!snap.exists)return 'gone';
       const cur=snap.data(),S=clone(cur),me=S.seats[k],o=1-k;
-      if(isPriv(tid)||S.status!=='open')return 'busy';
+      if((isPriv(tid)&&!isAdmin())||S.status!=='open')return 'busy';
       if(!me||!me.uid||me.left||(me.dev!==DEV&&me.uid!==uid))return 'gone';
       if(S.seats[o].uid&&!S.seats[o].left)return 'busy';
       const nm=BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)];
@@ -3839,6 +3839,7 @@ async function startBotGame(){
       tx.set(ref,S);return 'ok';
     });
     $('#w_bot').classList.remove('on');
+    if(res==='ok'&&isPriv(tid)&&myInv&&invSt().replace(/[^a-z].*$/,'')==='pending')cancelInvite();   /* o convite pendente deixa de valer */
     if(res==='busy')toast('Alguém acabou de sentar na mesa. A partida vai começar com essa pessoa.');
     else if(res==='poor')toast('Você não tem moedas suficientes para esta mesa.');
     else if(res==='gone')toast('Você não está mais nesta mesa.');
