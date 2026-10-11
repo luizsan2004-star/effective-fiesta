@@ -153,7 +153,6 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .rvdark{position:fixed;inset:0;z-index:90;pointer-events:auto;background:radial-gradient(ellipse at center,#000000c8 0%,#000000f2 80%)}
 .rvtxt{position:fixed;left:0;right:0;top:40%;z-index:95;text-align:center;pointer-events:none;font:700 1.3rem Georgia,serif;letter-spacing:.14em;color:#e8c35a;text-shadow:0 0 18px #e8c35a88}
 .rvflash{position:fixed;inset:0;z-index:98;pointer-events:none}
-.fw.vida.vk{text-shadow:0 3px 0 #7a5a00,0 0 16px #7a5a0099}
 .dbig{position:fixed;inset:0;z-index:95;pointer-events:none}
 .dbig .dw2{position:absolute;left:50%;top:50%;margin:calc(min(62px,15vw)/-2) 0 0 calc(min(62px,15vw)/-2)}
 .dbig .die{width:min(62px,15vw);height:min(62px,15vw);padding:min(8px,2vw);gap:1px;border-radius:min(12px,3vw);box-shadow:0 4px 0 #bbb,0 10px 18px #000c}
@@ -1951,11 +1950,11 @@ async function suspenseReveal(c){
   document.body.appendChild(f);
   if(f.animate)f.animate([{opacity:.85},{opacity:0}],{duration:700}).onfinish=()=>f.remove();else f.remove();
   Snd.sfx(c==='vida'?'vida':'morte');
-  flashWord(c==='vida'?'VIDA':'MORTE',c==='vida'?'vida vk':'morte');
+  flashWord(c==='vida'?'VIDA':'MORTE',c==='vida'?'vida':'morte');
   if(c==='vida'){   /* o preto dá lugar à cor do resultado, no próprio fundo */
-    o.style.background='#050505';
-    if(o.animate)o.animate([{backgroundColor:'#050505'},{backgroundColor:'#e6c868'}],{duration:450,fill:'both',composite:'replace'});
-    else o.style.background='#e6c868';
+    o.style.background='rgba(0,0,0,.88)';
+    if(o.animate)o.animate([{backgroundColor:'rgba(0,0,0,.88)'},{backgroundColor:'rgba(240,217,138,.34)'}],{duration:450,fill:'both'});
+    else o.style.background='rgba(240,217,138,.34)';
   }
   await sleep(1500);
   /* Vida: some na própria cor dourada; Morte: some preto */
