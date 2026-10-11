@@ -451,6 +451,8 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
 .slot.locked .card{box-shadow:var(--glowR)}   /* carta revelada: brilho vermelho claro que some para fora */
 .hand.pk .slot{cursor:pointer}
 .hand.pk .slot .back{box-shadow:var(--glowG)}
+.pzbtn{cursor:pointer;border:1px solid #ffffff44;background:#0006;color:var(--gold);font:inherit;font-weight:600}
+body.dealhold #hand .slot:not(.dealt),body.dealhold #opphand .slot:not(.dealt){visibility:hidden}
 .acebtn{margin-left:8px;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--gold);background:#0007;color:var(--gold);cursor:pointer}
 
 /* ===== perfil do oponente ===== */
@@ -1273,7 +1275,7 @@ const backs=(sl,S,k)=>{const n=S?S.seats[k].hand.length:5,rl=S?getRules(S):DRL,r
 const badge=p=>`<span class="badge ${p==='par'?'v':'m'}">${p==='par'?'PAR':'ÍMPAR'}</span>`;
 
 const emptySeat=()=>({uid:null,name:'',hand:[],traded:0,done:false,lastNew:[],parity:null,left:false,acted:false,dev:'',since:0,ace:1});
-const freshTable=id=>({id,v:0,ts:Date.now(),status:'open',seats:[emptySeat(),emptySeat()],deck:[],turn:1,cur:0,phase:'lobby',deadline:0,dice:[0,0],rollAt:0,win:-1,choice:'',winner:-1,abandoned:-1,picker:-1,rematch:[false,false],sel0:[],sel1:[],events:[],bet:BASE_BET[id]||50,stake:0,prop:null,payout:null,refund:null,startAt:0,rv:[-1,-1],rules:null,wins:[0,0],round:1,carry:0,sn:false,fm:''});
+const freshTable=id=>({id,v:0,ts:Date.now(),status:'open',seats:[emptySeat(),emptySeat()],deck:[],turn:1,cur:0,phase:'lobby',deadline:0,dice:[0,0],rollAt:0,win:-1,choice:'',winner:-1,abandoned:-1,picker:-1,rematch:[false,false],sel0:[],sel1:[],events:[],bet:BASE_BET[id]||50,stake:0,prop:null,payout:null,refund:null,startAt:0,pz:null,rv:[-1,-1],rules:null,wins:[0,0],round:1,carry:0,sn:false,fm:''});
 const pickerOf=S=>(S.picker===0||S.picker===1)?S.picker:0;
 const clone=o=>JSON.parse(JSON.stringify(o));
 function pushEv(S,t){S.events.push(t);if(S.events.length>4)S.events=S.events.slice(-4);}
@@ -1298,7 +1300,7 @@ function dealInto(S,W){
   {const rr=getRules(S),rnd=()=>Math.floor(Math.random()*n);S.rv=(rr.reveal&&(rr.reveal!=='pick'||rr.maxT===0))?[rnd(),rnd()]:[-1,-1];}   /* carta revelada (e travada) de cada jogador */
   S.seats.forEach(s=>{s.traded=0;s.done=false;s.lastNew=[];s.parity=null;s.ace=1;});
   S.dice=[0,0];S.rollAt=0;S.win=-1;S.choice='';S.winner=-1;S.abandoned=-1;S.picker=-1;S.rematch=[false,false];S.sel0=[];S.sel1=[];
-  S.bet=S.bet||BASE_BET[S.id]||50;S.prop=null;S.payout=null;S.refund=null;S.startAt=0;S.fm='';
+  S.bet=S.bet||BASE_BET[S.id]||50;S.pz=null;S.prop=null;S.payout=null;S.refund=null;S.startAt=0;S.fm='';
   if(S.sn){S.round=(S.round||1)+1;S.sn=false;}   /* próxima rodada da série: a aposta já está no pote */
   else{S.wins=[0,0];S.round=1;S.stake=S.bet;S.seats.forEach(x=>{if(W&&x.dev)W[x.dev]=(W[x.dev]||0)-S.stake;});}   /* cada um coloca a aposta no pote */
   S.status='playing';S.turn=1;S.cur=0;S.events=[(S.round>1?'Rodada '+S.round+' de '+getRules(S).series+'. ':'A partida começou! ')+'Pote de '+(S.stake*2+(S.carry||0))+' moedas. Turnos de '+getRules(S).tms+'s; Par/Ímpar e Vida/Morte: 15s.'+(rulesTxt(S)&&S.round<2?' Regras: '+rulesTxt(S)+'.':'')];
@@ -1469,6 +1471,7 @@ async function commit(mut,needW,allow){
       if(!snap.exists)return false;
       const cur=snap.data(),S=clone(cur);
       let W=null,W0=null;
+      if(!allow&&S.pz){ctxErr='Partida pausada.';return false;}
       if(!allow&&(S.prop||S.refund))return false;   /* tempo pausado: ninguém joga até responderem */
       if(needW){W=await readW(tx,S);W0=Object.assign({},W);}
       if(mut(S,W)===false)return false;
@@ -1698,7 +1701,7 @@ function applyChoice(S,c,W){
   const w=S.win,o=1-w,sw=seatSum(S,w),so=seatSum(S,o);
   let winner=-1;
   if(sw!==so){const wBig=sw>so;winner=(c==='vida')?(wBig?w:o):(wBig?o:w);}
-  S.choice=c;S.winner=winner;S.phase='result';S.status='finished';S.deadline=0;S.prop=null;S.refund=null;
+  S.pz=null;S.choice=c;S.winner=winner;S.phase='result';S.status='finished';S.deadline=0;S.prop=null;S.refund=null;
   if(!S.wins)S.wins=[0,0];
   if(rl.series>1){
     if(winner>=0)S.wins[winner]++;
@@ -1974,7 +1977,7 @@ function gameHTML(S,i){
   const k=TABLE_IDS.indexOf(S.id)+1;
   const inTrade=S.status==='playing'&&S.phase==='trade';
   const timed=S.status==='playing'&&(S.phase==='trade'||S.phase==='parity'||S.phase==='choose');
-  const bar=`<div class="topbar"><span class="pill">${isPriv(S.id)?'Privada':'Mesa '+k}${inTrade?' · Turno '+S.turn+' de 3':''}${getRules(S).series>1?' · Rodada '+(S.round||1)+'/'+getRules(S).series+' ('+S.wins[0]+'x'+S.wins[1]+')':''}</span><span class="pill">${esc(me.name)}</span>${timed?'<span class="pill timer" id="tm"></span>':''}</div>`+(timed?`<div class="tbar" id="tbar"><i id="tbf"></i></div>`:'');
+  const bar=`<div class="topbar"><span class="pill">${isPriv(S.id)?'Privada':'Mesa '+k}${inTrade?' · Turno '+S.turn+' de 3':''}${getRules(S).series>1?' · Rodada '+(S.round||1)+'/'+getRules(S).series+' ('+S.wins[0]+'x'+S.wins[1]+')':''}</span><span class="pill">${esc(me.name)}</span>${timed?'<span class="pill timer" id="tm"></span>':''}${(S.status==='playing'&&S.seats.some(x=>isBotDev(x.dev)))?`<button type="button" class="pill pzbtn" id="pz">${S.pz?'▶ Retomar':'⏸ Pausar'}</button>`:''}</div>`+(timed?`<div class="tbar" id="tbar"><i id="tbf"></i></div>`:'');
   const leave=`<button class="btn ghost leave" id="leave">${S.status==='playing'?'Abandonar partida':((S.status==='open'||S.status==='starting')?'Sair da mesa':'Voltar ao lobby')}</button>`;
   const G=(top,mid,bot)=>`<div class="gm"><div class="gtop">${top}</div><div class="gmid">${mid||''}</div><div class="gbot">${bot||''}</div></div>`;
   const ev=(!holdP&&!rolling&&S.events&&S.events.length)?`<div class="events">${S.events.slice(-1).map(esc).join('')}</div>`:'';
@@ -2187,7 +2190,7 @@ function animDeal(){
   const deckR=rectOf($('#deck')),jobs=[];let n=0;
   const mineEls=[...document.querySelectorAll('#hand .slot')],oppEls=[...document.querySelectorAll('#opphand .slot')];
   for(let k=0;k<Math.max(mineEls.length,oppEls.length);k++){
-    [oppEls[k],mineEls[k]].forEach((el,w)=>{if(el)jobs.push(flyIn(el,deckR,{delay:n*180,dur:850,face:w===1}));n++;});
+    [oppEls[k],mineEls[k]].forEach((el,w)=>{if(el)jobs.push(flyIn(el,deckR,{delay:n*Math.min(180,2000/(2*Math.max(mineEls.length,oppEls.length))),dur:850,face:w===1}));n++;});
   }
   return Promise.all(jobs);
 }
@@ -2401,6 +2404,8 @@ function bindTrade(S,i){
   $('#direct').onclick=()=>doDirect(i);
 }
 function bindGame(S,i){
+  const pzb=$('#pz');
+  if(pzb)pzb.onclick=()=>commit(X=>{if(X.status!=='playing'||!X.seats.some(x=>isBotDev(x.dev)))return false;if(X.pz){resumeClock(X,X.pz.ts);X.pz=null;}else X.pz={ts:Date.now()};},false,true);
   const lv=$('#leave');
   if(lv)lv.onclick=()=>{
     if(S.status==='playing'){betMode='lv';betKey='';paintBet();return;}
@@ -2555,7 +2560,7 @@ let tickKey='',lastTick=-1;
 function paintTimerNow(){
   if(!mine)return;const S=tables[mine.tid];
   if(!S||S.status!=='playing'||(S.phase!=='trade'&&S.phase!=='parity'&&S.phase!=='choose'))return;
-  const total=S.phase==='trade'?30:15,hold=S.prop||S.refund,ms=S.deadline-(hold?hold.ts:Date.now());
+  const total=(S.phase==='trade'?getRules(S).tms:15),hold=S.prop||S.refund||S.pz,ms=S.deadline-(hold?hold.ts:Date.now());
   const left=Math.min(total,Math.ceil(ms/1000)),low=left<=(S.phase==='trade'?10:5);
   const el=$('#tm'),bf=$('#tbf'),tb=$('#tbar');
   if(el){el.textContent=(hold?'Pausado · ':'')+Math.max(0,left)+'s';el.classList.toggle('low',low);}
@@ -2582,8 +2587,8 @@ setInterval(()=>{
     return;
   }
   if(!S||S.status!=='playing'||(S.phase!=='trade'&&S.phase!=='parity'&&S.phase!=='choose'))return;
-  const total=S.phase==='trade'?30:15;
-  const hold=S.prop||S.refund,ms=S.deadline-(hold?hold.ts:Date.now());
+  const total=(S.phase==='trade'?getRules(S).tms:15);
+  const hold=S.prop||S.refund||S.pz,ms=S.deadline-(hold?hold.ts:Date.now());
   const left=Math.min(total,Math.ceil(ms/1000));
   const low=left<=(S.phase==='trade'?10:5);
   const el=$('#tm'),bf=$('#tbf'),tb=$('#tbar');
@@ -3128,9 +3133,9 @@ function floaters(on){
 }
 
 /* espera -> mesa: tela de transicao cobre a troca e as cartas sao distribuidas ao abrir */
-/* embaralha e distribui o baralho no fundo da tela de transição */
+/* embaralha o baralho no fundo da tela de transição; devolve o retângulo da pilha quando termina de misturar */
 function shuffleScene(box,n){
-  if(!box||!box.animate)return sleep(1800);
+  if(!box||!box.animate)return sleep(1800).then(()=>null);
   const w=Math.max(44,Math.min(72,innerWidth*.15)),total=Math.max(10,Math.min(16,n*2)),cs=[];
   box.style.cssText='position:relative;width:100%;height:38vh;height:38dvh;max-height:300px;margin-top:6px';
   for(let k=0;k<total;k++){
@@ -3149,35 +3154,53 @@ function shuffleScene(box,n){
   });
   [0,500,1000,1500].forEach(t=>setTimeout(()=>Snd.sfx('deal'),t));
   return Promise.all(riffle).then(()=>{
-    const H=innerHeight*.42,deal=cs.slice().reverse().map((c,k)=>{
-      const up=k%2===0,sx=(((k>>1)%n)-(n-1)/2)*Math.min(26,innerWidth/(n+2)),y=up?-H:H;
-      setTimeout(()=>Snd.sfx('deal'),k*55);
-      return c.animate([{transform:T(0,0,0),opacity:1},{transform:T(sx,y,up?-12:12),opacity:.9,offset:.8},{transform:T(sx,y*1.1,up?-12:12),opacity:0}],
-        {duration:620,delay:k*55,easing:'cubic-bezier(.2,.8,.25,1)',fill:'forwards'}).finished.catch(()=>{});
-    });
-    return Promise.all(deal);
+    const r=cs[cs.length-1].getBoundingClientRect();
+    cs.forEach(c=>{c.style.visibility='hidden';});   /* a pilha some: as cartas seguem como voadoras, por cima da tela verde */
+    return {left:r.left,top:r.top,width:r.width,height:r.height};
   });
+}
+/* distribui direto para a mesa: as cartas atravessam a tela de transição e pousam nos lugares reais da mão */
+function dealToHands(src){
+  const mineEls=[...document.querySelectorAll('#hand .slot')],oppEls=[...document.querySelectorAll('#opphand .slot')];
+  const all=[...mineEls,...oppEls];
+  if(!src||!all.length||!all[0].animate){all.forEach(e=>e.classList.add('dealt'));return Promise.resolve();}
+  const n=Math.max(mineEls.length,oppEls.length),step=Math.min(90,1500/(n*2)),jobs=[];let c=0;
+  for(let k=0;k<n;k++)[oppEls[k],mineEls[k]].forEach((el,w)=>{
+    if(!el)return;
+    const t=el.getBoundingClientRect(),g=document.createElement('div');
+    g.className='flyd';
+    g.style.cssText=`position:fixed;left:${src.left}px;top:${src.top}px;width:${src.width}px;height:${src.height}px;z-index:210;pointer-events:none;container-type:inline-size;filter:drop-shadow(0 3px 5px #0009)`;
+    g.innerHTML='<div class="back"></div>';document.body.appendChild(g);
+    const dx=t.left+t.width/2-(src.left+src.width/2),dy=t.top+t.height/2-(src.top+src.height/2),sc=t.width/src.width,dl=c*step;c++;
+    setTimeout(()=>Snd.sfx('deal'),dl);
+    const a=g.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(${sc}) rotate(${w?3:-3}deg)`}],{duration:720,delay:dl,easing:'cubic-bezier(.25,.8,.25,1)',fill:'both'});
+    const land=()=>{el.classList.add('dealt');g.remove();if(w===1)flipIn(el,FLIP_MS,0);};
+    jobs.push(a.finished.then(land).catch(()=>{land();}));
+  });
+  return Promise.all(jobs);
 }
 function bridgeIn(S,i){
   lock((async()=>{
     const d=document.createElement('div');d.className='scene';
     d.innerHTML=`<div class="sci"></div><div class="sc1">BOA SORTE!</div><div class="sc2"><b>${esc(S.seats[i].name)}</b> × <b>${esc(S.seats[1-i].name)}</b><br>Embaralhando as cartas...</div><div class="shuf"></div>`;
     document.body.appendChild(d);Snd.sfx('start');floaters(false);
-    const kill=setTimeout(()=>d.remove(),11000);   /* segurança: a tela nunca fica presa */
+    document.body.classList.add('dealhold');   /* as mãos só aparecem quando as cartas pousam */
+    const end=()=>{d.remove();holdDeal=false;document.body.classList.remove('dealhold');document.querySelectorAll('.flyd').forEach(e=>e.remove());};
+    const kill=setTimeout(end,15000);   /* segurança: a tela nunca fica presa */
     try{
       if(d.animate)d.animate([{opacity:0},{opacity:1}],{duration:450,fill:'forwards'});
       await sleep(500);
       lastKey='';holdDeal=true;
       try{renderAll(true);}catch(e){console.error(e);}
       holdDeal=false;
-      await shuffleScene(d.querySelector('.shuf'),(S.seats[i].hand&&S.seats[i].hand.length)||5);
-      const a=d.animate?d.animate([{opacity:1},{opacity:0}],{duration:500,fill:'forwards'}):null;
-      let dl;try{dl=animDeal();}catch(e){console.error(e);}
-      if(a)await a.finished.catch(()=>{});
-      d.remove();await dl;
+      const src=await shuffleScene(d.querySelector('.shuf'),(S.seats[i].hand&&S.seats[i].hand.length)||5);
+      /* a tela verde some para cima enquanto as cartas já vão direto para a mesa */
+      const fade=d.animate?d.animate([{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-48px)'}],{duration:900,easing:'ease-in',fill:'forwards'}):null;
+      if(fade)fade.finished.catch(()=>{}).then(()=>d.remove());
+      await dealToHands(src);
     }catch(e){console.error(e);}
-    finally{clearTimeout(kill);d.remove();holdDeal=false;}
-  })(),13000);
+    finally{clearTimeout(kill);end();}
+  })(),17000);
 }
 
 /* convites */
@@ -3997,11 +4020,12 @@ function botSelPlan(n,idx,rv){
 /* devolve false se a mesa mudou no meio (a jogada é cancelada) */
 async function botSelAnim(b,tid,turn,idx){
   const S0=tables[tid];if(!S0)return false;
-  const alive=()=>{const S=tables[tid];return !!(S&&mine&&mine.tid===tid&&S.status==='playing'&&S.phase==='trade'&&S.turn===turn&&S.seats[b]&&!S.seats[b].acted&&!S.seats[b].done);};
+  const alive=()=>{const S=tables[tid];return !!(S&&mine&&mine.tid===tid&&!S.pz&&S.status==='playing'&&S.phase==='trade'&&S.turn===turn&&S.seats[b]&&!S.seats[b].acted&&!S.seats[b].done);};
   const steps=botSelPlan(S0.seats[b].hand.length,idx,rvOf(S0)[b]);
   const tot=steps.reduce((a,x)=>a+x.ms,0),cap=Math.min(9000,getRules(S0).tms*1000*0.4),k=tot>cap?cap/tot:1;   /* no máximo ~9s de animação */
   const ref=fs.doc('tables/'+tid);
   for(const st of steps){
+    while((animating||animLock>0)&&alive())await sleep(150);
     if(!alive())return false;
     await ref.update({['sel'+b]:st.sel}).catch(()=>{});
     await sleep(st.ms*k);
@@ -4011,6 +4035,7 @@ async function botSelAnim(b,tid,turn,idx){
 let botPlan={key:'',due:0};
 function botNeed(S,b){
   const now=Date.now(),me=1-b;
+  if(S.pz)return null;   /* partida pausada */
   if(S.prop&&S.prop.from!==b)return {key:'prop:'+S.prop.ts,at:now,wait:botRand(1200,2800),run:()=>respondBet(b,true)};
   if(S.refund&&S.refund.from!==b)return {key:'rf:'+S.refund.ts,at:now,wait:botRand(1200,2800),run:()=>respondRefund(b,true)};
   if(S.prop||S.refund)return null;
@@ -4067,7 +4092,7 @@ function botNeed(S,b){
   return null;
 }
 setInterval(()=>{
-  if(!fs||!mine||busy||botBusy)return;
+  if(!fs||!mine||busy||botBusy||animLock>0||animating)return;   /* o bot só joga depois que as animações da sua tela terminam */
   const S=tables[mine.tid];
   if(!S||!S.seats){return;}
   const bw=$('#w_bot');if(bw&&bw.classList.contains('on')&&S.status!=='open')bw.classList.remove('on');
