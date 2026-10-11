@@ -321,7 +321,6 @@ input[type=number]:focus{border-color:var(--gold);box-shadow:0 0 0 3px #e8c35a30
 .wtabs{display:flex;gap:8px;margin-bottom:12px}
 .wtabs button{flex:1;border:1px solid #e8c35a66;background:#0007;color:var(--ink);border-radius:10px;padding:10px 6px;font-weight:600;cursor:pointer;font-family:var(--fb)}
 .wtabs button.on{background:var(--gold);color:#2a1d00}
-#gchips{flex-wrap:wrap}
 #whist{max-height:46vh;overflow:auto}
 .hrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #ffffff1a}
 .hrow i{font-style:normal;font-size:1.3rem}
@@ -557,6 +556,8 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
 .dfr .odot:not(.on)+span{color:var(--muted)}
 #dfl .fempty{padding:4px 12px;font-size:.74rem;text-align:left}
 #dfmore{border:0!important;color:var(--gold);font-size:.74rem;padding:7px 12px}
+#pfr{margin:-2px 0 10px;display:flex;flex-direction:column;gap:6px}
+#pfr .btn{margin-top:0}
 </style>
 </head>
 <body>
@@ -638,6 +639,17 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
   <p class="hint" id="lo_txt" style="text-align:center"></p>
   <div class="row2"><button class="btn ghost" id="lo_no">Cancelar</button><button class="btn morte" id="lo_yes">Sair</button></div>
 </div></div>
+<div class="mw" id="sendbox" style="z-index:310" role="dialog" aria-label="Enviar moedas"><div class="wbox">
+  <button class="rx" data-wx aria-label="Fechar">✕</button>
+  <h3>Enviar moedas</h3>
+  <div class="wuser" id="send_to"></div>
+  <div class="wuser" id="send_bal" style="margin:2px 0 10px"></div>
+  <label>Quantidade<input type="text" inputmode="numeric" id="send_amt" placeholder="0" autocomplete="off"></label>
+  <div class="chips" id="send_chips"><button data-v="10">10</button><button data-v="50">50</button><button data-v="100">100</button><button data-v="all">Tudo</button></div>
+  <div class="gmsg" id="send_msg"></div>
+  <div class="row2"><button class="btn ghost" id="send_no">Cancelar</button><button class="btn" id="send_go">Enviar</button></div>
+</div></div>
+
 <div id="rules" role="dialog" aria-label="Regras do jogo"><div class="rbox">
   <button class="rx" id="rx" aria-label="Fechar">✕</button>
   <div class="rview"><div class="rtrack" id="rtrack">
@@ -708,12 +720,9 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
   <div class="wbig" id="wbig">🪙 0</div>
   <div class="wtabs"><button class="on" data-wt="gift">Doar</button><button data-wt="hist">Histórico</button><button data-wt="acct">Conta</button></div>
   <div id="wgift">
-    <label>Para quem (nome de usuário)<input type="text" id="gto" maxlength="17" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="nome de usuário"></label>
-    <label style="display:block;margin-top:10px">Quantidade<input type="text" inputmode="numeric" id="gamt" placeholder="0"></label>
-    <div class="chips" id="gchips"><button data-v="10">10</button><button data-v="50">50</button><button data-v="100">100</button><button data-v="all">Tudo</button></div>
+    <p class="uhint" style="margin:0 0 8px">Escolha um amigo para enviar moedas.</p>
+    <div class="fpick" id="gpick"><input type="text" class="fps" maxlength="17" autocomplete="off" spellcheck="false" placeholder="Buscar entre seus amigos"><div class="fpl" style="max-height:44vh"></div></div>
     <div class="gnote" id="gnote"></div>
-    <div class="gmsg" id="gmsg"></div>
-    <button class="btn" id="gsend">Doar moedas</button>
   </div>
   <div id="whist" style="display:none"></div>
   <div id="wacct" style="display:none">
@@ -2427,9 +2436,7 @@ function paintWal(){
   const bx=$('#walbox');if(!bx)return;
   $('#wbig').textContent='🪙 '+(wallet.ok?fmtC(wallet.coins):'...');
   $('#wuser').textContent=USER?('@'+USER+(isAdmin()?' · admin':'')):'';
-  const note=$('#gnote'),btn=$('#gsend');
-  if(mine){note.textContent='Saia da mesa para poder doar moedas.';btn.disabled=true;}
-  else{note.textContent='';btn.disabled=giving||!wallet.ok||!USER;}
+  paintGift();
 }
 function wtabSet(t){
   $('#wgift').style.display=t==='gift'?'block':'none';
@@ -2441,7 +2448,7 @@ function wtabSet(t){
 function openWallet(){
   if(!USER&&db&&uid&&wallet.ok){askUser('');return;}
   paintWal();paintHist();wtabSet('gift');
-  $('#gmsg').textContent='';$('#amsg').textContent='';
+  $('#amsg').textContent='';
   $('#walbox').classList.add('on');
 }
 function closeWallet(){$('#walbox').classList.remove('on');}
@@ -2484,6 +2491,7 @@ async function openProfile(dev,name,push){
     if(seq!==profSeq)return;
     const w=ws.exists?ws.data():{};
     const uname=(us&&!us.empty)?(us.docs[0].data().name||''):'';
+    if(profCur)profCur.fname=uname;
     const all=hs.docs.map(d=>d.data());
     const games=all.filter(h=>h.type==='game');
     const n=games.length,wins=games.filter(h=>h.res==='win').length,losses=games.filter(h=>h.res==='loss').length,draws=n-wins-losses;
@@ -2507,6 +2515,7 @@ async function openProfile(dev,name,push){
     $('#proftitle').textContent=uname?('@'+uname):(name||'Jogador');
     bx.innerHTML=`
       <div class="pcoins">🪙 ${fmtC(w.coins||0)}</div>
+      <div id="pfr"></div>
       <div class="pgrid">
         <div><small>Partidas</small><b>${n}</b></div>
         <div><small>Vitórias</small><b class="pos">${wins} · ${pc(wins)}%</b></div>
@@ -2525,43 +2534,10 @@ async function openProfile(dev,name,push){
       <h4>Últimas partidas</h4>
       ${rows||'<p class="hint">Nenhuma partida ainda.</p>'}
       ${hs.size>=300?'<p class="pnote">Estatísticas das últimas 300 atividades.</p>':''}`;
+    paintProfFriend();
   }catch(e){
     if(seq===profSeq)bx.innerHTML='<p class="hint">Não foi possível carregar o perfil. Confira sua conexão e as regras do Firestore.<br><small>'+esc((e&&e.message)||e)+'</small></p>';
   }
-}
-
-async function donate(){
-  if(giving)return;
-  const to=($('#gto').value||'').trim().replace(/^@/,'');
-  const amt=parseInt(($('#gamt').value||'').replace(/\D/g,''),10)||0;
-  if(mine){gmsg('Saia da mesa para poder doar moedas.');return;}
-  if(!to){gmsg('Digite o nome de usuário de quem vai receber.');return;}
-  if(userKey(to)===userKey(USER)){gmsg('Você não pode doar para você mesmo.');return;}
-  if(amt<1){gmsg('Digite uma quantidade de moedas.');return;}
-  if(amt>wallet.coins&&!isAdmin()){gmsg('Você só tem 🪙'+wallet.coins+'.');return;}
-  giving=true;paintWal();gmsg('Enviando...',true);
-  try{
-    const res=await fs.runTransaction(async tx=>{
-      const usn=await tx.get(fs.doc('usernames/'+userKey(to)));
-      if(!usn.exists)return {err:'Usuário não encontrado. Confira o nome.'};
-      const toDev=usn.data().dev,toName=usn.data().name||to;
-      if(toDev===DEV)return {err:'Você não pode doar para você mesmo.'};
-      const sref=fs.doc('wallets/'+DEV),rref=fs.doc('wallets/'+toDev);
-      const [ssn,rsn]=await Promise.all([tx.get(sref),tx.get(rref)]);
-      if(!ssn.exists||!rsn.exists)return {err:'Carteira não encontrada.'};
-      const sc=ssn.data().coins||0;
-      if(sc<amt&&!isAdmin())return {err:'Você não tem moedas suficientes.'};
-      const now=Date.now(),left=isAdmin()?sc:sc-amt;   /* admin doa sem gastar saldo */
-      tx.update(sref,{coins:left,ts:now,zeroAt:left<=0?now:null});
-      tx.update(rref,{coins:(rsn.data().coins||0)+amt,ts:now,zeroAt:null});
-      tx.set(fs.collection('wallets/'+DEV+'/history').doc(),{type:'gift_out',other:toName,amt,ts:now});
-      tx.set(fs.collection('wallets/'+toDev+'/history').doc(),{type:'gift_in',other:USER,amt,ts:now});
-      return {ok:true,toName};
-    });
-    if(res.err)gmsg(res.err);
-    else{gmsg('Você doou 🪙'+amt+' para '+res.toName+'!',true);$('#gamt').value='';$('#gto').value='';Snd.sfx('click');}
-  }catch(e){gmsg('Não foi possível doar: '+((e&&e.message)||e));}
-  finally{giving=false;paintWal();}
 }
 
 $('#wx').onclick=closeWallet;
@@ -2577,9 +2553,6 @@ document.addEventListener('click',e=>{
 });
 $('#walbox').addEventListener('pointerdown',e=>{if(e.target.id==='walbox')closeWallet();});
 document.querySelectorAll('#walbox [data-wt]').forEach(b=>{b.onclick=()=>wtabSet(b.dataset.wt);});
-document.querySelectorAll('#gchips button').forEach(b=>{b.onclick=()=>{$('#gamt').value=b.dataset.v==='all'?String(isAdmin()?10000:wallet.coins):b.dataset.v;};});
-$('#gamt').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'');});
-$('#gsend').onclick=donate;
 $('#usave').onclick=saveUser;
 $('#uname').addEventListener('keydown',e=>{if(e.key==='Enter')saveUser();});
 $('#upass').addEventListener('keydown',e=>{if(e.key==='Enter')saveUser();});
@@ -2846,7 +2819,7 @@ function paintBadge(){
 }
 const lastSeen=d=>{const o=FR.onl[d];return (o&&o.ts)?'visto '+ago(o.ts):'Offline';};
 function paintFriends(){
-  paintBadge();paintPicks();
+  paintBadge();paintPicks();paintProfFriend();paintGift();
   if(!$('#fr_list')||!USER)return;
   const inc=frIncoming(),outg=frOutgoing();
   $('#fr_in').innerHTML=inc.map(r=>`<div class="frow"><div class="fn"><b class="oplink" data-dev="${esc(r.fromDev)}" data-name="${esc(r.fromName)}">@${esc(frName(r.fromDev,r.fromName))}</b><small>quer ser seu amigo</small></div><button class="fbt ok" data-fa="acc" data-id="${esc(r.id)}">Aceitar</button><button class="fbt no" data-fa="del" data-id="${esc(r.id)}">Recusar</button></div>`).join('')||'<div class="fempty">Nenhum pedido recebido.</div>';
@@ -3012,6 +2985,120 @@ const paintPicks=()=>{paintPick('ppick');paintPick('ipick');};
   box.querySelector('.fps').addEventListener('input',()=>paintPick(id));
 });
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#privopen'))setTimeout(()=>{$('#pto').value='';$('#ppick .fps').value='';paintPick('ppick');},0);});
+
+/* ---- botão de amizade dentro do perfil do jogador ---- */
+function paintProfFriend(){
+  const el=$('#pfr');if(!el||!profCur||!profCur.dev)return;
+  const dev=profCur.dev;
+  if(dev===DEV){el.innerHTML='';return;}
+  const r=frAll().find(x=>x.fromDev===dev||x.toDev===dev);
+  let h='';
+  if(!profCur.fname){}
+  else if(!r)h='<button class="btn leave" data-pa="add">Adicionar amigo</button>';
+  else if(r.status==='accepted')h=`<button class="btn ghost leave" data-fa="rem" data-id="${esc(r.id)}">${FR.rem===r.id?'Confirmar remoção?':'Remover amizade'}</button>`;
+  else if(r.fromDev===DEV)h=`<button class="btn ghost leave" data-fa="del" data-id="${esc(r.id)}">Pedido enviado · Cancelar</button>`;
+  else h=`<div class="row2"><button class="btn leave" data-fa="acc" data-id="${esc(r.id)}">Aceitar pedido</button><button class="btn ghost leave" data-fa="del" data-id="${esc(r.id)}">Recusar</button></div>`;
+  el.innerHTML=h+((r&&r.status==='accepted')?'<button class="btn ghost leave" data-pa="send">Enviar moedas</button>':'');
+}
+async function addFriendDev(dev,name){
+  if(!USER){closeProfile();askUser('');return;}
+  if(!dev||dev===DEV||FR.sending)return;
+  FR.sending=true;
+  try{
+    const ex=frAll().find(r=>r.fromDev===dev||r.toDev===dev);
+    if(ex&&ex.status==='accepted'){toast('Vocês já são amigos.',true);return;}
+    if(ex&&ex.fromDev===DEV){toast('Você já enviou um pedido.');return;}
+    if(ex&&ex.toDev===DEV){await fs.doc('friendreqs/'+ex.id).update({status:'accepted',ts:Date.now(),toName:USER});toast('Vocês agora são amigos!',true);return;}
+    await fs.doc('friendreqs/'+DEV+'_'+dev).set({fromDev:DEV,fromName:USER,toDev:dev,toName:name,status:'pending',ts:Date.now()});
+    toast('Pedido enviado para @'+name+'.',true);
+  }catch(e){toast('Não foi possível enviar o pedido: '+((e&&e.message)||e));}
+  finally{FR.sending=false;}
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('[data-pa="add"]');if(!b||!profCur)return;
+  try{Snd.sfx('click');}catch(x){}
+  addFriendDev(profCur.dev,profCur.fname);
+});
+
+/* ---- enviar moedas pelo perfil ---- */
+let sendTo=null,sendingCoins=false;
+const isFriendDev=d=>frFriends().some(f=>f.dev===d);
+function paintSend(){
+  $('#send_bal').textContent='Seu saldo: 🪙 '+(wallet.ok?fmtC(wallet.coins):'...');
+  $('#send_go').disabled=sendingCoins||!wallet.ok;
+}
+function openSend(){if(profCur&&profCur.dev)openSendTo(profCur.dev,profCur.fname||profCur.name||'Jogador');}
+function openSendTo(dev,name){
+  if(!dev||dev===DEV)return;
+  if(!USER){closeProfile();closeWallet();askUser('');return;}
+  if(!isFriendDev(dev)){toast('Só é possível enviar moedas para amigos.');return;}
+  sendTo={dev,name:name||'Jogador'};
+  $('#send_to').textContent='Para @'+sendTo.name;
+  $('#send_amt').value='';
+  gmsg(mine?'Saia da mesa para poder enviar moedas.':'',false,'send_msg');
+  paintSend();if(mine)$('#send_go').disabled=true;
+  $('#sendbox').classList.add('on');
+  if(!mine)setTimeout(()=>{const i=$('#send_amt');if(i)i.focus();},250);
+}
+async function sendCoins(){
+  if(sendingCoins||!sendTo)return;
+  const m=(t,ok)=>gmsg(t,ok,'send_msg'),amt=parseInt(($('#send_amt').value||'').replace(/\D/g,''),10)||0,to=sendTo;
+  if(mine){m('Saia da mesa para poder enviar moedas.');return;}
+  if(!isFriendDev(to.dev)){m('Só é possível enviar moedas para amigos.');return;}
+  if(amt<1){m('Digite uma quantidade de moedas.');return;}
+  if(amt>wallet.coins&&!isAdmin()){m('Você só tem 🪙'+wallet.coins+'.');return;}
+  sendingCoins=true;paintSend();m('Enviando...',true);
+  try{
+    const res=await fs.runTransaction(async tx=>{
+      const sref=fs.doc('wallets/'+DEV),rref=fs.doc('wallets/'+to.dev);
+      const [ssn,rsn]=await Promise.all([tx.get(sref),tx.get(rref)]);
+      if(!ssn.exists||!rsn.exists)return {err:'Carteira não encontrada.'};
+      const sc=ssn.data().coins||0;
+      if(sc<amt&&!isAdmin())return {err:'Você não tem moedas suficientes.'};
+      const now=Date.now(),left=isAdmin()?sc:sc-amt;
+      tx.update(sref,{coins:left,ts:now,zeroAt:left<=0?now:null});
+      tx.update(rref,{coins:(rsn.data().coins||0)+amt,ts:now,zeroAt:null});
+      tx.set(fs.collection('wallets/'+DEV+'/history').doc(),{type:'gift_out',other:to.name,amt,ts:now});
+      tx.set(fs.collection('wallets/'+to.dev+'/history').doc(),{type:'gift_in',other:USER,amt,ts:now});
+      return {ok:true};
+    });
+    if(res.err)m(res.err);
+    else{m('Você enviou 🪙'+amt+' para @'+to.name+'!',true);$('#send_amt').value='';try{Snd.sfx('click');}catch(e){}setTimeout(()=>$('#sendbox').classList.remove('on'),1400);}
+  }catch(e){m('Não foi possível enviar: '+((e&&e.message)||e));}
+  finally{sendingCoins=false;paintSend();if(mine)$('#send_go').disabled=true;}
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('[data-pa="send"]');if(!b)return;
+  try{Snd.sfx('click');}catch(x){}
+  openSend();
+});
+document.querySelectorAll('#send_chips button').forEach(b=>{b.onclick=()=>{$('#send_amt').value=b.dataset.v==='all'?String(isAdmin()?10000:wallet.coins):b.dataset.v;};});
+$('#send_amt').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'');});
+$('#send_amt').addEventListener('keydown',e=>{if(e.key==='Enter')sendCoins();});
+$('#send_go').onclick=sendCoins;
+$('#send_no').onclick=()=>$('#sendbox').classList.remove('on');
+
+/* ---- aba Doar da carteira: só amigos ---- */
+function paintGift(){
+  const box=$('#gpick');if(!box)return;
+  const fps=box.querySelector('.fps'),list=box.querySelector('.fpl');
+  const note=$('#gnote');if(note)note.textContent=mine?'Saia da mesa para poder doar moedas.':'';
+  const all=frFriends().map(f=>({dev:f.dev,name:frName(f.dev,f.name),on:isOn(f.dev)})).sort((a,b)=>(b.on-a.on)||a.name.localeCompare(b.name));
+  fps.style.display=all.length?'':'none';
+  if(!all.length){
+    list.innerHTML='<div class="fempty">Você ainda não tem amigos.<br>Adicione amigos para poder enviar moedas.<br><button type="button" class="fbt ok gpo">Adicionar amigo</button></div>';
+    return;
+  }
+  const q=userKey(fps.value);
+  const fl=all.filter(f=>!q||userKey(f.name).includes(q));
+  list.innerHTML=fl.map(f=>`<button type="button" class="fpr" data-dev="${esc(f.dev)}" data-n="${esc(f.name)}"><i class="odot${f.on?' on':''}"></i><span>${esc(f.name)}</span><small>${f.on?'Online':'Offline'}</small></button>`).join('')||'<div class="fempty">Nenhum amigo encontrado.</div>';
+}
+$('#gpick').addEventListener('click',e=>{
+  const r=e.target.closest&&e.target.closest('.fpr');
+  if(r){try{Snd.sfx('click');}catch(x){}openSendTo(r.dataset.dev,r.dataset.n);return;}
+  if(e.target.closest&&e.target.closest('.gpo')){closeWallet();openWin('w_add');}
+});
+$('#gpick .fps').addEventListener('input',paintGift);
 
 /* ---- menu lateral (lista de opções) e janelas ---- */
 const WINS=['w_acc','w_fr','w_add','w_req','w_out'];
