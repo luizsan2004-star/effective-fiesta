@@ -276,11 +276,36 @@ input[type=text]::placeholder{color:#7f9a8b}
 .gm .wait{margin:auto}
 .hand.mini5 .slot.sel{transform:translateY(-6px)}
 .slot.sel .back{outline:3px solid var(--gold);outline-offset:1px;box-shadow:0 0 14px #e8c35acc}
+/* ===== moedas e apostas ===== */
+#sndbar{align-items:center}
+#coins{margin-right:auto;font-weight:700;color:var(--gold);display:none}
+.tbet{font-size:.78rem;letter-spacing:.05em;color:#d9c27a;margin:-2px 0 8px}
+.tbet b{font-family:var(--fd)}
+.betrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px}
+.betrow .pot{font-size:.88rem;letter-spacing:.04em}
+.betrow .pot b{color:var(--gold);font-family:var(--fd);font-size:1.05rem}
+.betrow .pot small{opacity:.7;margin-left:6px;font-size:.72rem}
+.btn.bchg{width:auto;margin:0;padding:7px 12px;font-size:.66rem}
+input[type=number]{width:100%;padding:11px 14px;border-radius:12px;border:1px solid #e8c35a40;background:#00000066;color:var(--ink);font:500 1.1rem var(--fb);margin-top:8px;outline:none}
+input[type=number]:focus{border-color:var(--gold);box-shadow:0 0 0 3px #e8c35a30}
+#betbox{position:fixed;inset:0;z-index:250;display:none;align-items:center;justify-content:center;padding:18px;background:#000b}
+#betbox.on{display:flex;animation:pop .25s ease}
+.bbox{width:100%;max-width:380px;background:linear-gradient(#0f4a34,#072a1d);border:2px solid var(--gold);border-radius:18px;padding:18px;box-shadow:0 10px 40px #000c;text-align:center}
+.bbox h3{font-family:var(--fd);color:var(--gold);margin:4px 0 8px;font-size:1.2rem;letter-spacing:.08em}
+.bbox p{margin:6px 0;line-height:1.45}
+.bbox b{color:var(--gold)}
+.bbox .no{color:#ff8a94}
+.chips{display:flex;gap:8px;justify-content:center;margin:10px 0 4px}
+.chips button{border:1px solid #e8c35a66;background:#0007;color:var(--ink);border-radius:99px;padding:7px 14px;font-weight:600;cursor:pointer;font-family:var(--fb)}
+.wal{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:10px 14px}
+.wal span{font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:#d9c27a;font-weight:600}
+.wal b{font-family:var(--fd);font-size:1.7rem;color:var(--gold);line-height:1}
+.wal small{display:block;color:var(--muted);font-size:.72rem;margin-top:2px;text-align:right}
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="sndbar"><button class="sb rb" id="br">📖 Regras</button><button class="sb" id="bm" aria-label="Música">🎵</button><button class="sb" id="bs" aria-label="Efeitos sonoros">🔊</button></div>
+  <div id="sndbar"><span class="pill" id="coins">🪙 0</span><button class="sb rb" id="br">📖 Regras</button><button class="sb" id="bm" aria-label="Música">🎵</button><button class="sb" id="bs" aria-label="Efeitos sonoros">🔊</button></div>
   <div id="top">
     <h1>VIDA <span class="m">ou</span> MORTE</h1>
     <p class="sub">Escolha uma mesa e sente-se. Cada mesa tem 2 vagas.</p>
@@ -302,10 +327,12 @@ input[type=text]::placeholder{color:#7f9a8b}
     <div class="rslide"><div class="ri">🔄</div><h3>Troca</h3><p>Você pode trocar até 3 cartas na partida, no máximo 2 por turno, em até 3 turnos de 30 segundos. Também pode pular a troca.</p></div>
     <div class="rslide"><div class="ri">🎲</div><h3>Par ou Ímpar</h3><p>Um jogador é sorteado para escolher Par ou Ímpar em 15 segundos, e o outro fica com a opção restante. Dois dados são rolados, e quem acertar a soma escolhe Vida ou Morte, também em 15 segundos.</p></div>
     <div class="rslide"><div class="ri">⚖️</div><h3>Vida ou Morte</h3><p><b>Vida:</b> vence a maior soma.<br><b>Morte:</b> vence a menor soma.<br>Soma igual é empate.</p></div>
-    <div class="rslide"><div class="ri">⏱</div><h3>Tempo e abandono</h3><p>Se o tempo acabar em qualquer escolha, ela é sorteada. Quem sair da mesa perde.</p></div>
+    <div class="rslide"><div class="ri">🪙</div><h3>Apostas</h3><p>Todo jogador começa com 200 moedas. Cada mesa tem uma aposta (50, 100, 150 ou 200) e o vencedor leva o pote. Empate devolve as moedas. Se você zerar, ganha 50 moedas depois de 30 minutos. Antes de começar e durante a partida, qualquer um pode propor um valor maior, e o oponente aceita ou recusa. O tempo pausa enquanto ele decide.</p></div>
+    <div class="rslide"><div class="ri">⏱</div><h3>Tempo e abandono</h3><p>Se o tempo acabar em qualquer escolha, ela é sorteada. Quem quiser desistir pode pedir reembolso ao oponente; se ele recusar, sai e perde a aposta.</p></div>
   </div></div>
   <div class="rnav"><button id="rprev">◀</button><div class="rdots" id="rdots"></div><button id="rnext">▶</button></div>
 </div></div>
+<div id="betbox" role="dialog" aria-label="Aposta"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -494,6 +521,11 @@ const TABLE_IDS=['mesa1','mesa2','mesa3','mesa4'];
 const ROLL_MS=12800;          /* tela "escolheu PAR" + dados + tela "VIDA OU MORTE" (entra no prazo de Vida/Morte) */
 const PARITY_LEAD=5600;      /* tela "PAR OU ÍMPAR" antes de começar a contar os 15s */
 const CHOICE_MS=15000;       /* tempo para Par/Ímpar e Vida/Morte */
+const BASE_BET={mesa1:50,mesa2:100,mesa3:150,mesa4:200};   /* aposta inicial de cada mesa (por jogador) */
+const START_COINS=200,MIN_BET=10;
+const PRESTART_MS=20000;   /* espera (escondida) antes da partida, para quem quiser alterar a aposta */
+const GRANT_COINS=50,GRANT_WAIT=30*60*1000;   /* zerou: ganha 50 moedas depois de 30 min (uma vez por vez que zerar) */
+const BEAT_MS=10000,PRES_TTL=60000,SWEEP_MS=8000;   /* presença: batimento, tempo até considerar a pessoa ausente, varredura */
 
 const cardOf=n=>{const su=SUITS[Math.floor(n/13)%4],r=RANKS[n%13];return {r,s:su.s,red:su.red,v:val(r)};};
 const sumH=h=>h.reduce((a,n)=>a+cardOf(n).v,0);
@@ -501,8 +533,8 @@ const handStatic=(h,nw,id,cls)=>`<div class="hand${cls?' '+cls:''}"${id?` id="${
 const backs=sl=>`<div class="hand mini5" id="opphand">${[0,1,2,3,4].map(x=>`<div class="slot static${sl&&sl.includes(x)?' sel':''}"><div class="back"></div></div>`).join('')}</div>`;
 const badge=p=>`<span class="badge ${p==='par'?'v':'m'}">${p==='par'?'PAR':'ÍMPAR'}</span>`;
 
-const emptySeat=()=>({uid:null,name:'',hand:[],traded:0,done:false,lastNew:[],parity:null,left:false,acted:false});
-const freshTable=id=>({id,v:0,ts:Date.now(),status:'open',seats:[emptySeat(),emptySeat()],deck:[],turn:1,cur:0,phase:'lobby',deadline:0,dice:[0,0],rollAt:0,win:-1,choice:'',winner:-1,abandoned:-1,picker:-1,rematch:[false,false],sel0:[],sel1:[],events:[]});
+const emptySeat=()=>({uid:null,name:'',hand:[],traded:0,done:false,lastNew:[],parity:null,left:false,acted:false,dev:'',since:0});
+const freshTable=id=>({id,v:0,ts:Date.now(),status:'open',seats:[emptySeat(),emptySeat()],deck:[],turn:1,cur:0,phase:'lobby',deadline:0,dice:[0,0],rollAt:0,win:-1,choice:'',winner:-1,abandoned:-1,picker:-1,rematch:[false,false],sel0:[],sel1:[],events:[],bet:BASE_BET[id]||50,stake:0,prop:null,payout:null,refund:null,startAt:0});
 const pickerOf=S=>(S.picker===0||S.picker===1)?S.picker:0;
 const clone=o=>JSON.parse(JSON.stringify(o));
 function pushEv(S,t){S.events.push(t);if(S.events.length>4)S.events=S.events.slice(-4);}
@@ -511,7 +543,7 @@ function pushEv(S,t){S.events.push(t);if(S.events.length>4)S.events=S.events.sli
 function startTurnS(S){
   S.sel0=[];S.sel1=[];
   while(true){
-    if(S.turn>3){S.phase='parity';S.picker=Math.random()<0.5?0:1;S.deadline=Date.now()+PARITY_LEAD+CHOICE_MS;S.seats.forEach(p=>{p.acted=false;});return;}
+    if(S.turn>3){S.phase='parity';S.prop=null;S.picker=Math.random()<0.5?0:1;S.deadline=Date.now()+PARITY_LEAD+CHOICE_MS;S.seats.forEach(p=>{p.acted=false;});return;}
     S.seats.forEach(p=>{if(!p.done&&p.traded>=3)p.done=true;p.acted=p.done;});
     if(S.seats.every(p=>p.done)){S.turn++;continue;}
     S.phase='trade';S.deadline=Date.now()+30000;return;
@@ -525,13 +557,15 @@ function maxTrade(S,i){
   if(S.turn===2)return S.seats[i].traded===2?1:Math.min(2,rem);
   return Math.min(2,rem);
 }
-function dealInto(S){
+function dealInto(S,W){
   const d=[...Array(104).keys()];
   for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}
   S.seats[0].hand=d.slice(0,5);S.seats[1].hand=d.slice(5,10);S.deck=d.slice(10);
   S.seats.forEach(s=>{s.traded=0;s.done=false;s.lastNew=[];s.parity=null;});
   S.dice=[0,0];S.rollAt=0;S.win=-1;S.choice='';S.winner=-1;S.abandoned=-1;S.picker=-1;S.rematch=[false,false];S.sel0=[];S.sel1=[];
-  S.status='playing';S.turn=1;S.cur=0;S.events=['A partida começou! Turnos de 30s; Par/Ímpar e Vida/Morte: 15s.'];
+  S.bet=S.bet||BASE_BET[S.id]||50;S.stake=S.bet;S.prop=null;S.payout=null;S.refund=null;S.startAt=0;
+  S.seats.forEach(x=>{if(W&&x.dev)W[x.dev]=(W[x.dev]||0)-S.stake;});   /* cada um coloca a aposta no pote */
+  S.status='playing';S.turn=1;S.cur=0;S.events=['A partida começou! Pote de '+(S.stake*2)+' moedas. Turnos de 30s; Par/Ímpar e Vida/Morte: 15s.'];
   startTurnS(S);
 }
 
@@ -539,6 +573,9 @@ function dealInto(S){
 let db=null,uid=null,canWrite=null,ready=false,tables={},mine=null,sel=new Set();
 let animDone=0,animating=false,lastKey='',busy=false,firedKey='',leaveArm=false;
 let prev=null,animLock=0,localOut=false,discShown=0,lastView='',holdParity=0,selFor='';
+let DEV='',ctxErr='',betMode='',betKey='',beatKey='',presOK=false,sweeping=false,leaving=false,pres={};
+const wallet={ok:false,coins:0,err:'',zeroAt:0};
+let granting=false;
 
 function toast(m){const n=$('#notice');n.innerHTML='<div>'+esc(m)+'</div>';clearTimeout(toast.t);toast.t=setTimeout(()=>{n.innerHTML='';},4000);}
 const getNick=()=>($('#nick').value||'').trim().slice(0,16);
@@ -547,14 +584,108 @@ function findMine(){
   if(!uid)return null;
   for(const tid of TABLE_IDS){
     const S=tables[tid];if(!S)continue;
-    for(let i=0;i<2;i++){const s=S.seats[i];if(s&&s.uid===uid&&!s.left)return {tid,seat:i};}
+    for(let i=0;i<2;i++){
+      const x=S.seats[i];
+      if(x&&x.uid&&!x.left&&((x.dev&&x.dev===DEV)||x.uid===uid))return {tid,seat:i};
+    }
   }
   return null;
 }
 
 /* ---------- gravação ---------- */
 let fs=null;
-async function commit(mut){
+
+/* identificação do aparelho: id aleatório guardado no navegador (localStorage + cookie de reserva) */
+function getDev(){
+  let d='';
+  try{d=localStorage.getItem('vom_dev')||'';}catch(e){}
+  if(!d){const m=document.cookie.match(/(?:^|; )vom_dev=([A-Za-z0-9]+)/);if(m)d=m[1];}
+  if(!d){
+    const r=(window.crypto&&crypto.randomUUID)?crypto.randomUUID().replace(/-/g,''):(Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
+    d='d'+r+Date.now().toString(36);
+  }
+  try{localStorage.setItem('vom_dev',d);}catch(e){}
+  try{document.cookie='vom_dev='+d+';max-age=63072000;path=/;SameSite=Lax';}catch(e){}
+  return d;
+}
+
+/* carteira: uma por aparelho (wallets/<id do aparelho>), criada com 200 moedas na primeira visita */
+async function initWallet(){
+  const ref=fs.doc('wallets/'+DEV);
+  await fs.runTransaction(async tx=>{
+    const sn=await tx.get(ref);
+    if(sn.exists)tx.update(ref,{uid,seen:Date.now()});
+    else tx.set(ref,{coins:START_COINS,uid,created:Date.now(),seen:Date.now()});
+  });
+  wallet.ok=true;
+  ref.onSnapshot(sn=>{if(sn.exists){const d=sn.data();wallet.coins=d.coins||0;wallet.zeroAt=d.zeroAt||0;}paintCoins();renderAll();},()=>{});
+  claimGrant();
+}
+function paintCoins(){
+  const el=$('#coins');if(!el)return;
+  el.style.display=(wallet.ok&&mine)?'inline-block':'none';
+  const T=mine?tables[mine.tid]:null;
+  const lk=(T&&T.status==='playing')?(T.stake||0):0;
+  let t='🪙 '+wallet.coins+(lk?' · '+lk+' na mesa':''),cd='';
+  if(wallet.coins<=0&&!lk&&wallet.zeroAt){
+    const left=Math.max(0,GRANT_WAIT-(Date.now()-wallet.zeroAt));
+    cd='+'+GRANT_COINS+' em '+Math.floor(left/60000)+':'+String(Math.floor(left%60000/1000)).padStart(2,'0');
+    t+=' · '+cd;
+  }
+  el.textContent=t;
+  const wt=$('#walt');if(wt)wt.textContent=cd;
+}
+/* sem moedas: depois de 30 min zerado, recebe 50 (só uma vez; zerar de novo reinicia a contagem) */
+async function claimGrant(){
+  if(!fs||!DEV||!wallet.ok||granting)return;
+  granting=true;
+  try{
+    const ref=fs.doc('wallets/'+DEV);
+    await fs.runTransaction(async tx=>{
+      const sn=await tx.get(ref);if(!sn.exists)return;
+      const d=sn.data();
+      if((d.coins||0)>0)return;
+      if(!d.zeroAt){tx.update(ref,{zeroAt:Date.now()});return;}
+      if(Date.now()-d.zeroAt<GRANT_WAIT)return;
+      tx.update(ref,{coins:GRANT_COINS,zeroAt:null,ts:Date.now(),grants:(d.grants||0)+1});
+    });
+  }catch(e){}
+  finally{granting=false;}
+}
+setInterval(()=>{
+  if(!wallet.ok||wallet.coins>0)return;
+  const T=mine?tables[mine.tid]:null;
+  if(T&&T.status==='playing')return;   /* moedas na mesa ainda não contam como zerado */
+  paintCoins();
+  if(!wallet.zeroAt||Date.now()-wallet.zeroAt>=GRANT_WAIT)claimGrant();
+},1000);
+
+/* leitura/gravação das carteiras dentro da mesma transação da mesa (tudo ou nada) */
+async function readW(tx,S){
+  const W={},devs=[...new Set(S.seats.map(x=>x.dev).filter(Boolean))];
+  const snaps=await Promise.all(devs.map(d=>tx.get(fs.doc('wallets/'+d))));
+  snaps.forEach((sn,k)=>{W[devs[k]]=sn.exists?(sn.data().coins||0):START_COINS;});
+  return W;
+}
+function writeW(tx,W,W0){
+  Object.keys(W).forEach(d=>{
+    if(W[d]===W0[d])return;
+    const data={coins:W[d],ts:Date.now()};
+    if(W[d]<=0)data.zeroAt=Date.now();   /* zerou: começa a contar os 30 min */
+    else data.zeroAt=null;
+    tx.set(fs.doc('wallets/'+d),data,{merge:true});
+  });
+}
+const canAfford=(S,W)=>S.seats.every(x=>x.dev&&(W[x.dev]||0)>=S.bet);
+/* paga o pote: w = índice do vencedor, -1 = empate (devolve as apostas) */
+function settle(S,W,w){
+  const st=S.stake||0;if(!st||!W)return;
+  if(w<0){S.seats.forEach(x=>{if(x.dev&&W[x.dev]!==undefined)W[x.dev]+=st;});}
+  else{const d=S.seats[w].dev;if(d&&W[d]!==undefined)W[d]+=st*2;}
+  S.payout={w,st};S.stake=0;
+}
+
+async function commit(mut,needW,allow){
   if(busy||!mine)return false;
   const tid=mine.tid;if(!tables[tid])return false;
   busy=true;
@@ -564,58 +695,115 @@ async function commit(mut){
       const snap=await tx.get(ref);
       if(!snap.exists)return false;
       const cur=snap.data(),S=clone(cur);
-      if(mut(S)===false)return false;
+      let W=null,W0=null;
+      if(!allow&&(S.prop||S.refund))return false;   /* tempo pausado: ninguém joga até responderem */
+      if(needW){W=await readW(tx,S);W0=Object.assign({},W);}
+      if(mut(S,W)===false)return false;
       S.v=(cur.v||0)+1;S.ts=Date.now();
-      tx.set(ref,S);return true;
+      tx.set(ref,S);
+      if(needW)writeW(tx,W,W0);
+      return true;
     });
   }catch(e){toast('Falha ao salvar a jogada. Tente de novo.');return false;}
-  finally{busy=false;}
+  finally{busy=false;if(ctxErr){const m=ctxErr;ctxErr='';toast(m);}}
 }
 
 async function claimSeat(tid){
   if(mine||busy)return;
+  if(!wallet.ok){toast('Sua carteira ainda não carregou. Aguarde um instante.');return;}
   const name=getNick();
   if(!name){toast('Digite seu apelido antes de sentar.');$('#nick').focus();return;}
   try{localStorage.setItem('vom_nick',name);}catch(e){}
   busy=true;
   try{
+    /* a presença é gravada antes de sentar: quem some da mesa é removido depois */
+    await fs.doc('presence/'+DEV).set({dev:DEV,uid,tid,ts:Date.now()});
     const ref=fs.doc('tables/'+tid);
     const res=await fs.runTransaction(async tx=>{
       const snap=await tx.get(ref);
       const S=snap.exists?clone(snap.data()):freshTable(tid);
       if(S.status!=='open'||(S.seats[0].uid&&S.seats[1].uid))return 'busy';
+      if(!S.bet)S.bet=BASE_BET[tid]||50;
       const free=S.seats[0].uid?1:0;
-      S.seats[free]=Object.assign(emptySeat(),{uid,name});
-      if(S.seats[0].uid&&S.seats[1].uid)dealInto(S);
+      S.seats[free]=Object.assign(emptySeat(),{uid,name,dev:DEV,since:Date.now()});
+      const W=await readW(tx,S),W0=Object.assign({},W);
+      if(!((W[DEV]||0)>=S.bet))return 'poor';
+      if(S.seats[0].uid&&S.seats[1].uid){
+        if(!canAfford(S,W))return 'other';
+        S.status='starting';S.startAt=Date.now()+PRESTART_MS;S.prop=null;S.refund=null;
+      }
       S.v=(S.v||0)+1;S.ts=Date.now();
-      tx.set(ref,S);return 'ok';
+      tx.set(ref,S);writeW(tx,W,W0);return 'ok';
     });
     if(res==='busy')toast('Essa mesa acabou de ser ocupada.');
+    else if(res==='poor')toast('Você não tem moedas suficientes para esta mesa.');
+    else if(res==='other')toast('O jogador desta mesa não tem moedas para a aposta. Escolha outra mesa.');
   }catch(e){toast('Não foi possível sentar: '+((e&&e.message)||e));}
   finally{busy=false;}
 }
 
+/* libera uma mesa parada há mais de 5 min (devolve as apostas, se houver partida em andamento) */
 async function freeTable(tid){
   if(busy)return;busy=true;
   try{
     const ref=fs.doc('tables/'+tid);
     await fs.runTransaction(async tx=>{
-      const s=await tx.get(ref);
-      if(s.exists&&Date.now()-(s.data().ts||0)>300000){const F=freshTable(tid);F.v=(s.data().v||0)+1;tx.set(ref,F);}
+      const sn=await tx.get(ref);
+      if(!sn.exists||Date.now()-(sn.data().ts||0)<=300000)return;
+      const S=clone(sn.data());
+      const W=await readW(tx,S),W0=Object.assign({},W);
+      if(S.status==='playing')settle(S,W,-1);
+      const F=freshTable(tid);F.v=(S.v||0)+1;
+      tx.set(ref,F);writeW(tx,W,W0);
     });
   }catch(e){toast('Falha ao liberar a mesa.');}
   finally{busy=false;}
 }
 
-async function leaveTable(){
-  if(!mine)return;const i=mine.seat;
-  await commit(S=>{
-    const me=S.seats[i];
-    if(S.status==='open'){S.seats[i]=emptySeat();return;}
-    me.left=true;
-    if(S.status==='playing'){S.status='abandoned';S.abandoned=i;pushEv(S,me.name+' saiu da mesa');}
-    if(S.seats.every(s=>!s.uid||s.left))Object.assign(S,freshTable(S.id));
+/* tira um jogador da mesa. Em partida em andamento, o oponente vence e leva o pote. */
+function removeSeat(S,k,W){
+  const me=S.seats[k];
+  if(S.status==='open'||S.status==='starting'){
+    S.seats[k]=emptySeat();S.status='open';S.startAt=0;S.prop=null;S.refund=null;S.bet=BASE_BET[S.id]||50;
+  }
+  else{
+    if(S.status==='playing'){
+      S.abandoned=k;settle(S,W,1-k);
+      S.status='abandoned';S.prop=null;S.refund=null;pushEv(S,me.name+' saiu da mesa');
+    }
+    me.left=true;S.rematch=[false,false];
+  }
+  if(S.seats.every(x=>!x.uid||x.left))Object.assign(S,freshTable(S.id));   /* mesa vazia: volta ao estado inicial */
+}
+/* opts.who = [ids] só remove se o assento for dessa pessoa; opts.ghost = só remove se a presença expirou */
+async function removeFromTable(tid,k,opts){
+  const ref=fs.doc('tables/'+tid);
+  return fs.runTransaction(async tx=>{
+    const sn=await tx.get(ref);if(!sn.exists)return false;
+    const cur=sn.data(),S=clone(cur),x=S.seats[k];
+    if(!x||!x.uid||x.left)return false;
+    if(opts.who&&!opts.who.includes(x.dev)&&!opts.who.includes(x.uid))return false;
+    if(opts.ghost){
+      const ps=await tx.get(fs.doc('presence/'+(x.dev||x.uid)));
+      const last=Math.max(ps.exists?(ps.data().ts||0):0,x.since||0);
+      if(Date.now()-last<=PRES_TTL)return false;
+    }
+    const W=await readW(tx,S),W0=Object.assign({},W);
+    removeSeat(S,k,W);
+    S.v=(cur.v||0)+1;S.ts=Date.now();
+    tx.set(ref,S);writeW(tx,W,W0);
+    return true;
   });
+}
+async function leaveTable(){
+  if(!mine||leaving)return;leaving=true;
+  const tid=mine.tid,k=mine.seat;
+  try{
+    await removeFromTable(tid,k,{who:[DEV,uid]});
+    fs.doc('presence/'+DEV).delete().catch(()=>{});
+    sel.clear();
+  }catch(e){toast('Não foi possível sair da mesa. Tente de novo.');}
+  finally{leaving=false;}
 }
 
 /* ---------- ações de jogo ---------- */
@@ -674,34 +862,212 @@ async function doTimeoutParity(){
   if(!ok)firedKey='';
 }
 function playAgain(i){
-  commit(S=>{
-    if(S.status!=='finished'||S.seats.some(s=>!s.uid||s.left))return false;
+  commit((S,W)=>{
+    if(S.status!=='finished'||S.seats.some(x=>!x.uid||x.left))return false;
     if(!S.rematch)S.rematch=[false,false];
     if(S.rematch[i])return false;
+    if(!canAfford(S,W)){ctxErr='Alguém não tem moedas para esta aposta. Altere a aposta ou volte ao lobby.';return false;}
     S.rematch[i]=true;
-    if(S.rematch[0]&&S.rematch[1])dealInto(S);   /* os dois toparam: nova partida na mesma mesa */
-  });
+    if(S.rematch[0]&&S.rematch[1])dealInto(S,W);   /* os dois toparam: nova partida na mesma mesa */
+  },true);
 }
-function applyChoice(S,c){
+function applyChoice(S,c,W){
   const w=S.win,o=1-w,sw=sumH(S.seats[w].hand),so=sumH(S.seats[o].hand);
   let winner=-1;
   if(sw!==so){const wBig=sw>so;winner=(c==='vida')?(wBig?w:o):(wBig?o:w);}
-  S.choice=c;S.winner=winner;S.phase='result';S.status='finished';S.deadline=0;
+  S.choice=c;S.winner=winner;S.phase='result';S.status='finished';S.deadline=0;S.prop=null;S.refund=null;
+  settle(S,W,winner);
 }
 function pickChoice(c){
-  commit(S=>{
+  commit((S,W)=>{
     if(S.status!=='playing'||S.phase!=='choose'||S.win!==mine.seat)return false;
-    applyChoice(S,c);
-  });
+    applyChoice(S,c,W);
+  },true);
 }
 async function doTimeoutChoose(){
-  const ok=await commit(S=>{
+  const ok=await commit((S,W)=>{
     if(S.status!=='playing'||S.phase!=='choose'||Date.now()<S.deadline)return false;
     const c=Math.random()<0.5?'vida':'morte';
     pushEv(S,`Tempo esgotado: a escolha de ${S.seats[S.win].name} foi sorteada (${c.toUpperCase()})`);
-    applyChoice(S,c);
-  });
+    applyChoice(S,c,W);
+  },true);
   if(!ok)firedKey='';
+}
+
+const commitA=(mut,needW)=>commit(mut,needW,true);
+/* devolve ao relógio da partida o tempo em que ficou pausado esperando uma resposta */
+function resumeClock(S,since){
+  const d=Date.now()-(since||Date.now());
+  if(d<=0)return;
+  if(S.deadline)S.deadline+=d;
+  if(S.startAt)S.startAt+=d;
+}
+/* começa a partida depois da espera */
+async function doStart(){
+  const ok=await commit((S,W)=>{
+    if(S.status!=='starting'||S.prop||S.refund||Date.now()<S.startAt)return false;
+    if(S.seats.some(x=>!x.uid||x.left))return false;
+    if(!canAfford(S,W)){S.startAt=Date.now()+60000;return;}
+    dealInto(S,W);
+  },true);
+  if(!ok)firedKey='';
+}
+
+/* ---------- apostas: proposta de novo valor ---------- */
+function canBet(S){
+  if(!S)return false;
+  if(S.status==='playing')return S.phase==='trade'||S.phase==='parity'||S.phase==='choose';
+  if(S.status==='starting'||S.status==='finished')return S.seats.every(x=>x.uid&&!x.left);
+  return false;
+}
+function proposeBet(i,n){
+  return commitA((S,W)=>{
+    if(!canBet(S)){ctxErr='Agora não dá para alterar a aposta.';return false;}
+    if(S.prop&&S.prop.from!==i){ctxErr='O oponente já fez uma proposta. Responda a ela primeiro.';return false;}
+    const me=S.seats[i],avail=(W[me.dev]||0)+(S.status==='playing'?(S.stake||0):0);
+    n=Math.floor(n);
+    if(S.refund){ctxErr='Há um pedido de reembolso em andamento.';return false;}
+    if(!(n>S.bet)){ctxErr='A nova aposta precisa ser maior que a atual ('+S.bet+').';return false;}
+    if(n>avail){ctxErr='Você só tem '+avail+' moedas disponíveis.';return false;}
+    S.prop={from:i,bet:n,ts:Date.now()};
+    pushEv(S,`${me.name} propôs mudar a aposta para ${n}`);
+  },true);
+}
+function respondBet(i,ok){
+  return commitA((S,W)=>{
+    const pr=S.prop;
+    if(!pr||pr.from===i)return false;
+    const me=S.seats[i];
+    if(!ok){S.prop=null;resumeClock(S,pr.ts);pushEv(S,`${me.name} recusou a nova aposta`);return;}
+    if(!canBet(S)){S.prop=null;resumeClock(S,pr.ts);ctxErr='A proposta expirou.';return;}
+    const live=S.status==='playing',delta=live?pr.bet-(S.stake||0):0;
+    if(!S.seats.every(x=>x.dev&&(live?(W[x.dev]||0)-delta>=0:(W[x.dev]||0)>=pr.bet))){ctxErr='Alguém não tem moedas suficientes para essa aposta.';return false;}
+    if(live){S.seats.forEach(x=>{W[x.dev]-=delta;});S.stake=pr.bet;}
+    S.bet=pr.bet;S.prop=null;resumeClock(S,pr.ts);
+    pushEv(S,`Aposta alterada para ${pr.bet} (pote ${pr.bet*2})`);
+  },true);
+}
+/* ---------- desistir: pedir reembolso ao oponente ---------- */
+function requestRefund(i){
+  return commitA(S=>{
+    if(S.status!=='playing'||S.refund)return false;
+    S.refund={from:i,ts:Date.now()};S.prop=null;
+    pushEv(S,`${S.seats[i].name} pediu reembolso para desistir`);
+  });
+}
+function cancelRefund(i){return commitA(S=>{if(!S.refund||S.refund.from!==i)return false;const t=S.refund.ts;S.refund=null;resumeClock(S,t);});}
+function respondRefund(i,ok){
+  return commitA((S,W)=>{
+    const r=S.refund;
+    if(!r||r.from===i||S.status!=='playing')return false;
+    const k=r.from;S.refund=null;
+    if(ok){   /* apostas devolvidas, quem pediu sai sem perder nada */
+      S.abandoned=k;settle(S,W,-1);S.status='abandoned';S.seats[k].left=true;S.rematch=[false,false];
+      pushEv(S,`${S.seats[i].name} concedeu o reembolso`);
+    }else{    /* recusou: quem pediu sai e perde a aposta */
+      removeSeat(S,k,W);
+    }
+  },true);
+}
+function cancelBet(i){return commitA(S=>{if(!S.prop||S.prop.from!==i)return false;const t=S.prop.ts;S.prop=null;resumeClock(S,t);});}
+
+function betRowHTML(S,i){
+  const bet=S.bet||BASE_BET[S.id]||50,pr=S.prop;
+  let right='';
+  if(canBet(S)&&!isRolling(S)){
+    if(!pr)right=`<button class="btn ghost bchg" id="bchg">Alterar aposta</button>`;
+    else if(pr.from===i)right=`<button class="btn ghost bchg" id="bcancel">Cancelar proposta</button>`;
+  }
+  const note=(pr&&pr.from===i)?`<div class="events">Proposta enviada: aposta de 🪙${pr.bet} cada. Aguardando resposta...</div>`:'';
+  return `<div class="betrow"><span class="pot">🪙 Pote <b>${bet*2}</b><small>${bet} cada</small></span>${right}</div>${note}`;
+}
+function payTxt(S,i){
+  const p=S.payout;if(!p)return '';
+  if(p.w<0)return '<br>🪙 Empate: as apostas foram devolvidas.';
+  return p.w===i?`<br>🪙 Você ganhou <b>${p.st}</b> moedas!`:`<br>🪙 Você perdeu ${p.st} moedas.`;
+}
+/* janelas de aposta e de desistência (ficam fora da tela do jogo para não sumirem a cada atualização) */
+function paintBet(){
+  const box=$('#betbox');if(!box)return;
+  const S=mine?tables[mine.tid]:null,i=mine?mine.seat:0;
+  const playing=!!S&&S.status==='playing';
+  const rf=playing?S.refund:null;
+  const can=canBet(S);
+  const inc=(can&&!rf&&S.prop&&S.prop.from!==i)?S.prop:null;
+  let key='',need=0;
+  if(rf&&rf.from!==i)key='rin:'+rf.ts;
+  else if(rf)key='rw:'+rf.ts;
+  else if(can&&S.prop&&S.prop.from===i)key='pw:'+S.prop.ts;
+  else if(inc){
+    need=S.status==='playing'?inc.bet-(S.stake||0):inc.bet;
+    key='in:'+inc.ts+':'+inc.bet+':'+((wallet.coins>=need)?1:0);
+  }else if(betMode==='lv'&&playing)key='lv';
+  else if(betMode==='dlg'&&can&&!S.prop)key='dlg';
+  else betMode='';
+  if(key===betKey)return;
+  betKey=key;
+  if(!key){box.className='';box.innerHTML='';return;}
+  box.className='on';
+  const bet=S.bet||BASE_BET[S.id]||50,st=S.stake||0;
+  if(rf&&rf.from!==i){
+    box.innerHTML=`<div class="bbox"><h3>Pedido de reembolso</h3>
+      <p><b>${esc(S.seats[rf.from].name)}</b> quer desistir da partida e pede que você devolva as apostas.</p>
+      <p>Se aceitar, a partida termina e cada um recebe <b>🪙${st}</b> de volta. Se recusar, ele sai e você leva o pote de <b>🪙${st*2}</b>.</p>
+      <p class="hint">O tempo da partida está pausado enquanto você decide.</p>
+      <div class="row2"><button class="btn morte" id="rref">Recusar</button><button class="btn vida" id="racc">Aceitar</button></div></div>`;
+    $('#rref').onclick=()=>respondRefund(i,false);
+    $('#racc').onclick=()=>respondRefund(i,true);
+  }else if(key.indexOf('pw:')===0){
+    box.innerHTML=`<div class="bbox"><h3>Aguardando o oponente</h3>
+      <p>Você propôs uma aposta de <b>🪙${S.prop.bet}</b> cada (pote ${S.prop.bet*2}) a <b>${esc(S.seats[1-i].name)}</b>.</p>
+      <p class="hint">O tempo da partida está pausado até ele responder.</p>
+      <button class="btn ghost" id="pcan">Cancelar proposta</button></div>`;
+    $('#pcan').onclick=()=>cancelBet(i);
+  }else if(rf){
+    box.innerHTML=`<div class="bbox"><h3>Aguardando o oponente</h3>
+      <p>Você pediu reembolso a <b>${esc(S.seats[1-i].name)}</b>.</p>
+      <p>Se ele aceitar, você sai sem perder nada. Se recusar, você sai da partida e perde <b>🪙${st}</b>.</p>
+      <button class="btn ghost" id="rcan">Cancelar pedido e continuar jogando</button></div>`;
+    $('#rcan').onclick=()=>cancelRefund(i);
+  }else if(inc){
+    const who=esc(S.seats[inc.from].name),ok=wallet.coins>=need;
+    box.innerHTML=`<div class="bbox"><h3>Proposta de aposta</h3>
+      <p><b>${who}</b> propôs ${inc.bet>bet?'subir':'baixar'} a aposta para <b>🪙${inc.bet}</b> cada.</p>
+      <p>Pote: <b>${inc.bet*2}</b> moedas (hoje é ${bet*2}).</p>
+      <p class="hint">O tempo da partida está pausado enquanto você decide.</p>
+      ${ok?'':`<p class="no">Você não tem moedas suficientes para aceitar.</p>`}
+      <div class="row2"><button class="btn morte" id="bref">Recusar</button><button class="btn vida" id="bacc" ${ok?'':'disabled'}>Aceitar</button></div></div>`;
+    $('#bref').onclick=()=>respondBet(i,false);
+    $('#bacc').onclick=()=>respondBet(i,true);
+  }else if(key==='lv'){
+    box.innerHTML=`<div class="bbox"><h3>Desistir da partida?</h3>
+      <p>Se sair agora, você perde <b>🪙${st}</b> e o oponente leva o pote.</p>
+      <p>Você pode pedir ao oponente que devolva as apostas. Se ele aceitar, ninguém perde. Se recusar, você sai e perde o valor apostado.</p>
+      <button class="btn" id="lrf">Pedir reembolso ao oponente</button>
+      <button class="btn morte" id="lout">Sair e perder 🪙${st}</button>
+      <button class="btn ghost" id="lno">Continuar jogando</button></div>`;
+    $('#lrf').onclick=()=>{betMode='';paintBet();requestRefund(i);};
+    $('#lout').onclick=()=>{betMode='';paintBet();leaveTable();};
+    $('#lno').onclick=()=>{betMode='';paintBet();};
+  }else{
+    const max=(wallet.coins||0)+(S.status==='playing'?st:0);
+    const can2=max>bet;
+    box.innerHTML=`<div class="bbox"><h3>Alterar aposta</h3>
+      <p>Aposta atual: <b>🪙${bet}</b> cada (pote ${bet*2}).</p>
+      ${can2?`<p>Proponha qualquer valor acima de ${bet}, até <b>🪙${max}</b>.</p>
+      <input type="number" id="bin" min="${bet+1}" max="${max}" step="1" inputmode="numeric" value="${Math.min(max,bet+50)}">
+      <p class="hint">O oponente vai ver a proposta e pode aceitar ou recusar.</p>`
+      :`<p class="no">Você não tem moedas para aumentar a aposta.</p>`}
+      <div class="row2"><button class="btn ghost" id="bno">Cancelar</button><button class="btn" id="byes" ${can2?'':'disabled'}>Propor</button></div></div>`;
+    $('#bno').onclick=()=>{betMode='';paintBet();};
+    $('#byes').onclick=()=>{
+      const inp=$('#bin');if(!inp)return;
+      const n=parseInt(inp.value,10);
+      if(!(n>bet)){toast('A nova aposta precisa ser maior que '+bet+'.');return;}
+      if(n>max){toast('Você só tem '+max+' moedas disponíveis.');return;}
+      betMode='';paintBet();proposeBet(i,n);
+    };
+  }
 }
 
 /* ---------- telas ---------- */
@@ -710,20 +1076,26 @@ function unavailHTML(){
   return `<div class="warn">Não foi possível conectar ao Firebase. Confira se você colou a configuração em <b>FIREBASE_CONFIG</b> no início do arquivo e se o login Anônimo está ativado.<br><small>${esc(initError)}</small></div>`;
 }
 function lobbyHTML(){
-  const warn=canWrite===false?`<div class="warn">Você só pode assistir. Peça ao dono do jogo acesso de <b>Contributor</b> para sentar em uma mesa.</div>`:'';
+  const warn=(canWrite===false?`<div class="warn">Você só pode assistir. Peça ao dono do jogo acesso de <b>Contributor</b> para sentar em uma mesa.</div>`:'')
+    +(wallet.err?`<div class="warn">Não foi possível abrir sua carteira de moedas. Confira as regras do Firestore: as coleções <b>wallets</b> e <b>presence</b> precisam permitir leitura e escrita para usuários logados.<br><small>${esc(wallet.err)}</small></div>`:'');
   const cards=TABLE_IDS.map((tid,k)=>{
     const S=tables[tid]||freshTable(tid);
-    const occ=S.seats.filter(s=>s.uid).length,full=occ===2;
-    const st=S.status==='open'?(occ?'Aguardando':'Livre'):(S.status==='playing'?'Em jogo':'Encerrada');
+    const bet=S.bet||BASE_BET[tid];
+    const occ=S.seats.filter(x=>x.uid&&!x.left).length,full=occ===2;
+    const st=S.status==='open'?(occ?'Aguardando':'Livre'):(S.status==='playing'?'Em jogo':(S.status==='starting'?'Iniciando':'Encerrada'));
     const stale=occ>0&&Date.now()-(S.ts||0)>300000;
-    let btn=(S.status==='open'&&!full)
-      ?`<button class="btn" data-sit="${tid}" ${canWrite===false?'disabled':''}>Sentar na mesa ${k+1}</button>`
-      :`<button class="btn ghost" disabled>Mesa cheia</button>`;
+    const poor=wallet.ok&&wallet.coins<bet;
+    let btn;
+    if(S.status==='open'&&!full)btn=`<button class="btn" data-sit="${tid}" ${(canWrite===false||poor||!wallet.ok)?'disabled':''}>${poor?'Moedas insuficientes':'Sentar na mesa '+(k+1)}</button>`;
+    else btn=`<button class="btn ghost" disabled>${full?'Mesa cheia':'Aguardando saída'}</button>`;
     if(stale)btn+=`<button class="btn ghost" data-free="${tid}">Liberar mesa</button>`;
     return `<div class="tbl"><h3>Mesa ${k+1}<span class="st ${S.status==='open'?'open':'play'}">${st}</span></h3>
-      <div class="seats">${S.seats.map(s=>`<div class="seat${s.uid?' taken':''}">${s.uid?esc(s.name):'Vaga livre'}</div>`).join('')}</div>${btn}</div>`;
+      <div class="tbet">🪙 Aposta <b>${bet}</b> · pote ${bet*2}</div>
+      <div class="seats">${S.seats.map(x=>`<div class="seat${x.uid&&!x.left?' taken':''}">${x.uid&&!x.left?esc(x.name):'Vaga livre'}</div>`).join('')}</div>${btn}</div>`;
   }).join('');
-  return warn+`<div class="lgrid">${cards}</div>`;
+  const broke=(wallet.ok&&wallet.coins<=0)?`<div class="warn">Você está sem moedas. Depois de 30 minutos zerado, o sistema dá <b>🪙${GRANT_COINS}</b> (uma vez).</div>`:'';
+  const bal=`<div class="panel wal"><span>Suas moedas</span><div><b>🪙 ${wallet.ok?wallet.coins:'...'}</b><small id="walt"></small></div></div>`;
+  return bal+warn+broke+`<div class="lgrid">${cards}</div>`;
 }
 
 /* mesa: baralho + descarte */
@@ -760,12 +1132,13 @@ function gameHTML(S,i){
   const inTrade=S.status==='playing'&&S.phase==='trade';
   const timed=S.status==='playing'&&(S.phase==='trade'||S.phase==='parity'||S.phase==='choose');
   const bar=`<div class="topbar"><span class="pill">Mesa ${k}${inTrade?' · Turno '+S.turn+' de 3':''}</span><span class="pill">${esc(me.name)}</span>${timed?'<span class="pill timer" id="tm">⏱</span>':''}</div>`+(timed?`<div class="tbar" id="tbar"><i id="tbf"></i></div>`:'');
-  const leave=`<button class="btn ghost leave" id="leave">${S.status==='playing'?'Abandonar partida':(S.status==='open'?'Sair da mesa':'Voltar ao lobby')}</button>`;
+  const leave=`<button class="btn ghost leave" id="leave">${S.status==='playing'?'Abandonar partida':((S.status==='open'||S.status==='starting')?'Sair da mesa':'Voltar ao lobby')}</button>`;
   const G=(top,mid,bot)=>`<div class="gm"><div class="gtop">${top}</div><div class="gmid">${mid||''}</div><div class="gbot">${bot||''}</div></div>`;
   const ev=(!holdP&&!rolling&&S.events&&S.events.length)?`<div class="events">${S.events.slice(-2).map(esc).join('<br>')}</div>`:'';
 
-  if(S.status==='open')return G(bar,`<div class="wait"><div class="big">🂠</div><h2>Aguardando oponente</h2><p class="sub">A partida começa quando outra pessoa sentar na mesa ${k}.</p></div>`,leave);
-  if(S.status==='abandoned')return G(bar,`<div class="banner win">Vitória por W.O.<small>${esc(opp.name)} saiu da mesa.</small></div>`,leave);
+  if(S.status==='starting')return G(bar+betRowHTML(S,i),`<div class="wait"><div class="big">🂠</div><h2>${esc(me.name)} x ${esc(opp.name)}</h2><p class="sub">A partida já vai começar. Se quiser, altere a aposta agora.</p></div>`,leave);
+  if(S.status==='open')return G(bar+betRowHTML(S,i),`<div class="wait"><div class="big">🂠</div><h2>Aguardando oponente</h2><p class="sub">A partida começa quando outra pessoa sentar na mesa ${k}.</p></div>`,leave);
+  if(S.status==='abandoned')return G(bar,`<div class="banner ${S.payout&&S.payout.w<0?'draw':'win'}">${S.payout&&S.payout.w<0?'Partida encerrada':'Vitória por W.O.'}<small>${esc(opp.name)} saiu da mesa.${payTxt(S,i)}</small></div>`,leave);
 
   const reveal=S.status==='finished';
   const showPar=(S.phase==='choose'||S.phase==='result')&&!rolling;
@@ -773,7 +1146,7 @@ function gameHTML(S,i){
   const oppSel=(S.phase==='trade'&&!opp.acted)?(S['sel'+(1-i)]||[]):[];
   const oppPanel=`<div class="panel${reveal?' mini':''}"><div class="who"><b>${esc(opp.name)}${reveal&&S.winner===1-i?' <span class="rvl">👑</span>':''}</b><span>${showPar&&opp.parity?badge(opp.parity):''}${chip(1-i)}</span></div>${reveal?handStatic(opp.hand,null,'opphand','mini5 rev')+`<div class="sum"><span>Soma</span><b id="oppsum">${sumH(opp.hand)}</b></div>`:backs(oppSel)}</div>`;
   const sumBox=`<div class="sum"><span>Sua soma</span>${showPar&&me.parity?badge(me.parity):''}${chip(i)}<b id="mysum">${sumH(me.hand)}</b></div>`;
-  const top=bar+oppPanel+feltHTML(S)+ev;
+  const top=bar+betRowHTML(S,i)+oppPanel+feltHTML(S)+ev;
   const myHand=nw=>handStatic(me.hand,nw||null,'hand');
 
   if(S.phase==='trade'){
@@ -808,7 +1181,7 @@ function gameHTML(S,i){
   /* resultado */
   const sums=S.seats.map(x=>sumH(x.hand));
   const rule=S.choice==='vida'?'VIDA: vence a maior soma':'MORTE: vence a menor soma';
-  const reason=`${esc(S.seats[S.win].name)} acertou o ${total%2===0?'par':'ímpar'} e escolheu ${rule}. `+(S.winner<0?'As somas são iguais.':`Somas: ${esc(S.seats[0].name)} ${sums[0]} x ${sums[1]} ${esc(S.seats[1].name)}.`);
+  const reason=`${esc(S.seats[S.win].name)} acertou o ${total%2===0?'par':'ímpar'} e escolheu ${rule}. `+(S.winner<0?'As somas são iguais.':`Somas: ${esc(S.seats[0].name)} ${sums[0]} x ${sums[1]} ${esc(S.seats[1].name)}.`)+payTxt(S,i);
   const banner=S.winner<0?`<div class="banner draw">Empate<small>${reason}</small></div>`
     :`<div class="banner win">${esc(S.seats[S.winner].name)} venceu!<small>${reason}</small></div>`;
   const rm=S.rematch||[false,false];
@@ -1012,7 +1385,7 @@ async function runDice(S){
 function transition(p,S,i,before){
   const tasks=[];
   discShown=S.seats[0].traded+S.seats[1].traded;
-  const fresh=!p||p.status==='open'||p.status==='finished'||p.status==='abandoned';
+  const fresh=!p||p.status==='open'||p.status==='starting'||p.status==='finished'||p.status==='abandoned';
   if(!p&&S.status==='open')Snd.sfx('sit');
   if(S.status==='playing'&&fresh&&S.turn===1&&S.phase==='trade'&&S.seats.every(s=>!s.acted&&!s.traded)){
     Snd.sfx('start');tasks.push(animDeal());
@@ -1092,11 +1465,13 @@ function bindTrade(S,i){
 function bindGame(S,i){
   const lv=$('#leave');
   if(lv)lv.onclick=()=>{
-    if(S.status==='playing'&&!leaveArm){leaveArm=true;lv.textContent='Toque de novo para confirmar';setTimeout(()=>{leaveArm=false;},3000);return;}
+    if(S.status==='playing'){betMode='lv';betKey='';paintBet();return;}
     leaveArm=false;leaveTable();
   };
   if($('#dice')&&!animating&&S.rollAt&&animDone!==S.rollAt)runDice(S);
   const ag=$('#again');if(ag)ag.onclick=()=>playAgain(i);
+  const bc=$('#bchg');if(bc)bc.onclick=()=>{betMode='dlg';betKey='';paintBet();};
+  const bx=$('#bcancel');if(bx)bx.onclick=()=>cancelBet(i);
   if(S.status!=='playing')return;
   if(S.phase==='trade'&&!S.seats[i].acted&&!S.seats[i].done)bindTrade(S,i);
   if(S.phase==='parity'&&pickerOf(S)===i&&$('#par')){$('#par').onclick=()=>pickParity(i,'par');$('#imp').onclick=()=>pickParity(i,'impar');}
@@ -1106,10 +1481,11 @@ function bindGame(S,i){
 function renderAll(){
   if(animating||animLock>0)return;
   mine=findMine();
+  if(mine){const bk=mine.tid+':'+mine.seat;if(beatKey!==bk){beatKey=bk;beat();}}else beatKey='';
   if(!mine&&V.on)voiceStop();
-  paintVoice();
+  paintVoice();paintCoins();paintBet();
   const T=mine?tables[mine.tid]:null;
-  const key=JSON.stringify(mine?[T?Object.assign({},T,{sel0:0,sel1:0}):T,animDone]:[tables,canWrite,ready,!!db,!!uid]);
+  const key=JSON.stringify(mine?[T?Object.assign({},T,{sel0:0,sel1:0}):T,animDone]:[tables,canWrite,ready,!!db,!!uid,wallet.coins,wallet.ok,wallet.err]);
   if(key===lastKey){paintOppSel();return;}lastKey=key;
   $('#top').style.display=mine?'none':'block';
   const v=$('#view');
@@ -1136,21 +1512,28 @@ let tickKey='',lastTick=-1;
 setInterval(()=>{
   if(!mine)return;
   const S=tables[mine.tid];
+  if(S&&S.status==='starting'){
+    if(!S.prop&&!S.refund&&Date.now()>=S.startAt){
+      const sk='st:'+S.startAt;
+      if(firedKey!==sk){firedKey=sk;setTimeout(()=>doStart(),Math.random()*600);}
+    }
+    return;
+  }
   if(!S||S.status!=='playing'||(S.phase!=='trade'&&S.phase!=='parity'&&S.phase!=='choose'))return;
   const total=S.phase==='trade'?30:15;
-  const ms=S.deadline-Date.now();
+  const hold=S.prop||S.refund,ms=S.deadline-(hold?hold.ts:Date.now());
   const left=Math.min(total,Math.ceil(ms/1000));
   const low=left<=(S.phase==='trade'?10:5);
   const el=$('#tm'),bf=$('#tbf'),tb=$('#tbar');
-  if(el){el.textContent='⏱ '+Math.max(0,left)+'s';el.classList.toggle('low',low);}
+  if(el){el.textContent=(hold?'⏸ ':'⏱ ')+Math.max(0,left)+'s';el.classList.toggle('low',low);}
   if(bf)bf.style.width=Math.max(0,Math.min(100,ms/(total*10)))+'%';
   if(tb)tb.classList.toggle('low',low);
   const key=S.id+':'+S.turn+':'+S.phase+':'+S.deadline;
   if(tickKey!==key){tickKey=key;lastTick=-1;}
   const me=S.seats[mine.seat];
-  const quiet=(S.phase==='trade'&&(me.acted||me.done))||animating;
+  const quiet=(S.phase==='trade'&&(me.acted||me.done))||animating||!!hold;
   if(!quiet&&left<=5&&left>=0&&left!==lastTick){lastTick=left;Snd.sfx(left===0?'alarm':'tick');}
-  if(left<=0){
+  if(left<=0&&!hold){
     if(firedKey!==key){
       firedKey=key;
       const turn=S.turn,ph=S.phase;
@@ -1158,6 +1541,33 @@ setInterval(()=>{
     }
   }
 },300);
+
+/* ---------- presença: quem some da mesa é removido ---------- */
+function beat(){
+  if(!fs||!DEV||!mine)return;
+  fs.doc('presence/'+DEV).set({dev:DEV,uid,tid:mine.tid,ts:Date.now()}).catch(()=>{});
+}
+setInterval(beat,BEAT_MS);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)beat();});
+setInterval(()=>{
+  if(!fs||!uid||!presOK||sweeping)return;
+  const now=Date.now();let job=null;
+  for(const tid of TABLE_IDS){
+    const S=tables[tid];if(!S||!S.seats)continue;
+    for(let k=0;k<2;k++){
+      const x=S.seats[k];
+      if(!x||!x.uid||x.left)continue;
+      if(mine&&mine.tid===tid&&mine.seat===k)continue;
+      const p=pres[x.dev||x.uid];
+      const last=Math.max(p?(p.ts||0):0,x.since||0);
+      if(now-last>PRES_TTL){job=[tid,k];break;}
+    }
+    if(job)break;
+  }
+  if(!job)return;
+  sweeping=true;
+  removeFromTable(job[0],job[1],{ghost:true}).catch(()=>{}).finally(()=>{sweeping=false;});
+},SWEEP_MS);
 
 /* ---------- som: liberar no primeiro toque e botões ---------- */
 ['pointerdown','keydown','touchend'].forEach(ev=>document.addEventListener(ev,()=>Snd.init(),{passive:true}));
@@ -1344,10 +1754,12 @@ async function boot(){
     firebase.initializeApp(FIREBASE_CONFIG);
     fs=firebase.firestore();
     const cred=await firebase.auth().signInAnonymously();
-    uid=cred.user.uid;canWrite=true;db=fs;
+    uid=cred.user.uid;canWrite=true;db=fs;DEV=getDev();
+    try{await initWallet();}catch(e){wallet.err=(e&&e.message)||String(e);}
   }catch(e){initError=(e&&e.message)||String(e);}
   ready=true;
   if(db&&uid){
+    fs.collection('presence').onSnapshot(sn=>{const q={};sn.forEach(d=>{q[d.id]=d.data();});pres=q;presOK=true;},()=>{presOK=false;});
     fs.collection('tables').onSnapshot(snap=>{
       const t={};snap.docs.forEach(d=>{if(d.exists)t[d.id]=d.data();});
       tables=t;renderAll();
