@@ -153,9 +153,7 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .rvdark{position:fixed;inset:0;z-index:90;pointer-events:auto;background:radial-gradient(ellipse at center,#000000c8 0%,#000000f2 80%)}
 .rvtxt{position:fixed;left:0;right:0;top:40%;z-index:95;text-align:center;pointer-events:none;font:700 1.3rem Georgia,serif;letter-spacing:.14em;color:#e8c35a;text-shadow:0 0 18px #e8c35a88}
 .rvflash{position:fixed;inset:0;z-index:98;pointer-events:none}
-.rvfade{position:fixed;inset:0;z-index:91;pointer-events:none}
-.rvfade.vida{background:radial-gradient(ellipse at center,#f0d98a 0%,#c9a23a 60%,#8a6a14 100%)}
-.rvfade.morte{background:radial-gradient(ellipse at center,#c8202f 0%,#7a0f1b 60%,#3d0610 100%)}
+.fw.vida.vk{text-shadow:0 3px 0 #7a5a00,0 0 16px #7a5a0099}
 .dbig{position:fixed;inset:0;z-index:95;pointer-events:none}
 .dbig .dw2{position:absolute;left:50%;top:50%;margin:calc(min(62px,15vw)/-2) 0 0 calc(min(62px,15vw)/-2)}
 .dbig .die{width:min(62px,15vw);height:min(62px,15vw);padding:min(8px,2vw);gap:1px;border-radius:min(12px,3vw);box-shadow:0 4px 0 #bbb,0 10px 18px #000c}
@@ -1387,9 +1385,17 @@ async function doTimeoutTurn(expTurn){
   });
   if(!ok)firedKey='';
 }
+/* teste (só administrador, só contra bot): força o resultado dos dados */
+let TESTDICE='rand';try{TESTDICE=localStorage.getItem('vom_testdice')||'rand';}catch(e){}
+const TESTLBL={rand:'Aleatório',par:'Par',impar:'Ímpar',favor:'A meu favor'};
 function applyParity(S,i,c){
   S.seats[i].parity=c;S.seats[1-i].parity=(c==='par'?'impar':'par');
-  const d=[rnd6(),rnd6()];S.dice=d;S.rollAt=Date.now();
+  let d=[rnd6(),rnd6()];
+  if(typeof isAdmin==='function'&&isAdmin()&&TESTDICE!=='rand'&&mine&&S.seats.some(x=>isBotDev(x.dev))){
+    const want=TESTDICE==='par'?0:TESTDICE==='impar'?1:(S.seats[mine.seat].parity==='par'?0:1);   /* 'favor': cai o que o admin escolheu */
+    let g=0;while((d[0]+d[1])%2!==want&&g++<200)d=[rnd6(),rnd6()];
+  }
+  S.dice=d;S.rollAt=Date.now();
   const out=(d[0]+d[1])%2===0?'par':'impar';
   S.win=S.seats.findIndex(x=>x.parity===out);
   S.phase='choose';S.deadline=Date.now()+ROLL_MS+CHOICE_MS;   /* 15s depois da animação dos dados */
@@ -1945,19 +1951,15 @@ async function suspenseReveal(c){
   document.body.appendChild(f);
   if(f.animate)f.animate([{opacity:.85},{opacity:0}],{duration:700}).onfinish=()=>f.remove();else f.remove();
   Snd.sfx(c==='vida'?'vida':'morte');
-  flashWord(c==='vida'?'VIDA':'MORTE',c==='vida'?'vida':'morte');
-  await sleep(1500);
-  if(c==='vida'){
-    /* Vida: o escuro vai degradando para dourado e some nessa cor */
-    const g=document.createElement('div');g.className='rvfade vida';document.body.appendChild(g);
-    if(g.animate)await g.animate([{opacity:0},{opacity:1}],{duration:600,easing:'ease-in',fill:'both'}).finished.catch(()=>{});
-    if(o.animate)o.animate([{opacity:1},{opacity:0}],{duration:900,fill:'both'});
-    if(g.animate)await g.animate([{opacity:1},{opacity:0}],{duration:900,easing:'ease-out',fill:'both'}).finished.catch(()=>{});
-    g.remove();
-  }else{
-    /* Morte: continua preto e some */
-    if(o.animate)await o.animate([{opacity:1},{opacity:0}],{duration:700,fill:'both'}).finished.catch(()=>{});
+  flashWord(c==='vida'?'VIDA':'MORTE',c==='vida'?'vida vk':'morte');
+  if(c==='vida'){   /* o preto dá lugar à cor do resultado, no próprio fundo */
+    o.style.background='#050505';
+    if(o.animate)o.animate([{backgroundColor:'#050505'},{backgroundColor:'#e6c868'}],{duration:450,fill:'both',composite:'replace'});
+    else o.style.background='#e6c868';
   }
+  await sleep(1500);
+  /* Vida: some na própria cor dourada; Morte: some preto */
+  if(o.animate)await o.animate([{opacity:1},{opacity:0}],{duration:c==='vida'?900:700,fill:'both'}).finished.catch(()=>{});
   o.remove();
 }
 async function animResult(S,i){
@@ -3686,6 +3688,21 @@ setInterval(()=>{
   botPlan.due=Date.now()+2000;   /* se a jogada não passar, tenta de novo daqui a pouco */
   nd.run();
 },400);
+
+/* botão de teste do administrador: escolhe o resultado dos dados contra o bot */
+(function(){
+  const b=document.createElement('button');b.id='tdbtn';b.type='button';
+  b.style.cssText='position:fixed;left:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:40;display:none;padding:7px 12px;border-radius:99px;border:1px solid #ffffff44;background:#000c;color:#e8c35a;font:600 .8rem system-ui,sans-serif;cursor:pointer';
+  document.body.appendChild(b);
+  const paint=()=>{b.textContent='🎲 Dados: '+TESTLBL[TESTDICE];};
+  b.onclick=()=>{const o=['rand','par','impar','favor'];TESTDICE=o[(o.indexOf(TESTDICE)+1)%o.length];try{localStorage.setItem('vom_testdice',TESTDICE);}catch(e){}paint();};
+  paint();
+  setInterval(()=>{
+    let on=false;
+    if(isAdmin()&&mine){const S=tables[mine.tid];on=!!(S&&S.seats&&S.seats.some(x=>x&&x.uid&&isBotDev(x.dev)));}
+    b.style.display=on?'block':'none';
+  },500);
+})();
 
 /* ---------- início ---------- */
 async function boot(){
