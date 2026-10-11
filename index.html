@@ -156,13 +156,12 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .fw.vida.vq{font-weight:800;letter-spacing:.24em;background:linear-gradient(180deg,#fffbe9 0%,#f0d98a 55%,#c9a23a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;text-shadow:none;filter:drop-shadow(0 0 14px #ffe58a88)}
 .fw.vida.vq:after{content:'✦ ✦ ✦';display:block;font-size:1rem;letter-spacing:.5em;margin-top:6px}
 .spark{position:fixed;z-index:99;border-radius:50%;pointer-events:none;background:radial-gradient(circle,#fff6c8 0%,#f0d98a 45%,#f0d98a00 72%)}
-.dbig{position:fixed;inset:0;z-index:95;pointer-events:none;perspective:900px;--ds:min(64px,16vw)}
+.dbig{position:fixed;inset:0;z-index:95;pointer-events:none;perspective:1800px;--ds:min(38px,9.5vw)}
 .dbig .dw2{position:absolute;left:50%;top:50%;width:var(--ds);height:var(--ds);margin:calc(var(--ds)/-2) 0 0 calc(var(--ds)/-2);transform-style:preserve-3d}
 .dcube{position:absolute;inset:0;transform-style:preserve-3d}
-.dface{position:absolute;inset:0;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:15%;gap:2%;box-sizing:border-box;background:linear-gradient(145deg,#fff 0%,#e6e6e6 100%);border-radius:14%;backface-visibility:hidden;box-shadow:inset 0 0 0 1px #00000026,inset 0 0 9px #0000002e}
+.dface{position:absolute;inset:0;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:19%;gap:6%;box-sizing:border-box;background:#f7f7f4;border-radius:26%;backface-visibility:hidden;box-shadow:inset 0 0 0 1.5px #0000001c}
 .dface i{display:block;width:100%;height:100%;border-radius:50%;visibility:hidden}
-.dface i.on{visibility:visible;background:radial-gradient(circle at 35% 30%,#444,#000)}
-.dface.f1 i.on{background:radial-gradient(circle at 35% 30%,#e0384a,#9a0f1f)}
+.dface i.on{visibility:visible;background:#000}
 .dface.f1{transform:translateZ(calc(var(--ds)/2))}
 .dface.f6{transform:rotateY(180deg) translateZ(calc(var(--ds)/2))}
 .dface.f3{transform:rotateY(90deg) translateZ(calc(var(--ds)/2))}
@@ -2051,7 +2050,7 @@ async function runDice(S){
     const bw=[...box.querySelectorAll('.dw2')];
     if(o.animate)o.animate([{opacity:0},{opacity:1}],{duration:600,fill:'both'});
     Snd.sfx('dice');
-    const RD=3000,W=innerWidth,H=innerHeight,sz=Math.min(64,W*.16),R=(a,b)=>a+Math.random()*(b-a),sg=()=>Math.random()<.5?-1:1;
+    const RD=3000,W=innerWidth,H=innerHeight,sz=Math.min(38,W*.095),R=(a,b)=>a+Math.random()*(b-a),sg=()=>Math.random()<.5?-1:1;
     /* cada dado entra por um lado da tela: lados diferentes entre si e diferentes da rolagem anterior */
     const sides=[];
     for(let k=0;k<2;k++){
@@ -2067,7 +2066,7 @@ async function runDice(S){
       return [W/2+m,R(-.4,.4)*H];
     };
     /* onde cada dado para: qualquer ponto da tela, sem se sobrepor e sem cobrir o texto da soma */
-    const mg=sz*1.15,hx=Math.max(W/2-mg,0),hy=Math.max(H/2-mg,0);
+    const mg=sz*1.15,hx=Math.max(Math.min(W/2-mg,W*.28),0),hy=Math.max(Math.min(H/2-mg,H*.2),0);
     const tTop=H*.09+Math.min(46,W*.11)-6,tBot=tTop+96;
     const okSpot=q=>q[1]+sz*.9<tTop||q[1]-sz*.9>tBot;
     let land=null;
@@ -2110,7 +2109,7 @@ async function runDice(S){
       w.animate([P([sx,sy],0,'linear'),P(pos[0],T1,'linear'),P(pos[1],T2,'linear'),P(pos[2],T3,'cubic-bezier(.25,.45,.4,1)'),P([lx,ly],1,'linear')],{duration:RD,fill:'both'});
       /* altura (z) e giro em 3D nos três eixos; no fim a face sorteada fica virada para cima */
       let dX=sg(),dY=sg();const tx=R(-26,-10),ty=R(-30,30),tz=R(-14,14),bs=BASE[S.dice[k]]||BASE[1];
-      const tf=(z,x,y)=>`translate3d(0px,${-z*.5}px,${z}px) rotateX(${tx}deg) rotateY(${ty}deg) rotateZ(${tz}deg) rotateX(${x}deg) rotateY(${y}deg)`;
+      const tf=(z,x,y,f=1)=>`translate3d(0px,${-z*.5}px,${z}px) rotateX(${tx*f}deg) rotateY(${ty*f}deg) rotateZ(${tz}deg) rotateX(${x}deg) rotateY(${y}deg)`;
       const steps0=[[0,150,'ease-in'],[T1,0,'ease-out'],[(T1+T2)/2,125,'ease-in'],[T2,0,'ease-out'],[(T2+T3)/2,65,'ease-in'],[T3,0,'ease-out'],[(T3+T4)/2,26,'ease-in'],[T4,0,'ease-out']];
       const steps=steps0.map(([o,z,e])=>[o,col&&o>col.tc?z*1.5:z,e]);   /* depois do choque os pulos ficam maiores */
       let rx=R(0,360),ry=R(0,360),po=0,flip=false;
@@ -2120,7 +2119,7 @@ async function runDice(S){
         if(j>0){const v=af?1.4:1;rx+=dX*R(1000,1700)*v*(o-po);ry+=dY*R(1000,1700)*v*(o-po);}
         po=o;return {transform:tf(z,rx,ry),offset:o,easing:e};
       });
-      kf.push({transform:tf(0,fin(rx,bs[0],dX),fin(ry,bs[1],dY)),offset:1});
+      kf.push({transform:tf(0,fin(rx,bs[0],dX),fin(ry,bs[1],dY),0),offset:1});
       cube.animate(kf,{duration:RD,fill:'both'});
       /* sombra no chão: some e encolhe quando o dado está no ar */
       sh.animate(steps.map(([o,z])=>({transform:`translate3d(0,${sz*.62}px,${-sz}px) scale(${1.05-z/330})`,opacity:Math.max(.12,.6-z/400),offset:o})).concat([{transform:`translate3d(0,${sz*.62}px,${-sz}px) scale(1.05)`,opacity:.6,offset:1}]),{duration:RD,fill:'both'});
