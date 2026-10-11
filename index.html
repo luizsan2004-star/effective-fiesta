@@ -643,6 +643,10 @@ body.dealhold #hand .slot:not(.dealt),body.dealhold #opphand .slot:not(.dealt){v
 .dsec input[type=number]:focus{border-color:var(--gold);box-shadow:0 0 0 3px #e8c35a30}
 #lockbox{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:18px;background:#000e}
 #lockbox.on{display:flex}
+/* espectador: partida vista de fora, com as duas mãos abertas */
+.gm .hand.spw .slot{max-width:clamp(40px,8.4vh,70px);max-width:clamp(40px,8.4dvh,70px)}
+.hand.spw .slot.sel{transform:translateY(-8px)}
+.hand.spw{padding:6px 0 2px}
 </style>
 </head>
 <body>
@@ -1286,8 +1290,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const rnd6=()=>1+Math.floor(Math.random()*6);
 const TABLE_IDS=['mesa1','mesa2','mesa3','mesa4'];
 const ROLL_MS=12800;          /* tela "escolheu PAR" + dados + tela "VIDA OU MORTE" (entra no prazo de Vida/Morte) */
-const TURN_LEAD=6500,TURN1_LEAD=3500;   /* tempo extra no relógio do turno para a tela "TURNO n" (e as cartas voando) não comerem o tempo de quem joga */
-const PARITY_LEAD=5600;      /* tela "PAR OU ÍMPAR" antes de começar a contar os 15s */
+const TURN_LEAD=8200,TURN1_LEAD=5000;   /* tempo extra no relógio do turno para a tela "TURNO n" (e as cartas voando) não comerem o tempo de quem joga */
+const PARITY_LEAD=8000;      /* tela "PAR OU ÍMPAR" antes de começar a contar os 15s */
 const CHOICE_MS=15000;       /* tempo para Par/Ímpar e Vida/Morte */
 const BASE_BET={mesa1:50,mesa2:100,mesa3:150,mesa4:200};   /* aposta inicial de cada mesa (por jogador) */
 const START_COINS=200,MIN_BET=10;
@@ -1319,7 +1323,8 @@ function rulesTxt(S){const r=getRules(S);return RDEFS.filter(d=>r[d[0]]!==DRL[d[
 const cardOf=n=>{const su=SUITS[Math.floor(n/13)%4],r=RANKS[n%13];return {r,s:su.s,red:su.red,v:r==='A'?(CR.ace===11?11:1):(r==='J'||r==='Q'||r==='K')?(CR.fig==='seq'?{J:11,Q:12,K:13}[r]:10):val(r)};};
 const sumH=(h,a)=>h.reduce((t,n)=>{const c=cardOf(n);return t+(a&&c.r==='A'?a:c.v);},0);
 const seatSum=(S,k)=>sumH(S.seats[k].hand,CR.ace==='pick'?(S.seats[k].ace||1):0);
-const handStatic=(h,nw,id,cls)=>`<div class="hand${cls?' '+cls:''}"${id?` id="${id}"`:''}>${h.map((n,x)=>`<div class="slot static${nw&&nw.has(x)?' new':''}">${cardHTML(cardOf(n))}</div>`).join('')}</div>`;
+const ordPos=(p,n)=>{const o=p&&p.ord;if(!Array.isArray(o)||o.length!==n)return null;const pos=[];for(let r=0;r<n;r++){const k=o[r];if(!(k>=0&&k<n)||pos[k]!==undefined)return null;pos[k]=r;}return pos;};
+const handStatic=(h,nw,id,cls,sp)=>{const pos=sp?ordPos(sp,h.length):null;return `<div class="hand${cls?' '+cls:''}"${id?` id="${id}"`:''}>${h.map((n,x)=>`<div class="slot static${nw&&nw.has(x)?' new':''}"${pos?` style="order:${pos[x]}"`:''}>${cardHTML(cardOf(n))}</div>`).join('')}</div>`;};
 const backs=(sl,S,k)=>{const n=S?S.seats[k].hand.length:5,rl=S?getRules(S):DRL,rv=S?rvOf(S)[k]:-1,pk=S&&rl.reveal==='pick'&&S.phase==='trade'&&rv<0;
   return `<div class="hand mini5${pk?' pk':''}" id="opphand">${[...Array(n).keys()].map(x=>`<div class="slot static${sl&&sl.includes(x)?' sel':''}${x===rv?' locked':''}">${x===rv?cardHTML(cardOf(S.seats[k].hand[x])):'<div class="back"></div>'}</div>`).join('')}</div>`;};
 const badge=p=>`<span class="badge ${p==='par'?'v':'m'}">${p==='par'?'PAR':'ÍMPAR'}</span>`;
@@ -1331,8 +1336,19 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 function pushEv(S,t){S.events.push(t);if(S.events.length>4)S.events=S.events.slice(-4);}
 
 /* ---------- regras (puras sobre o estado) ---------- */
+/* ordem de exibição (crescente) de cada mão, fixada no início do turno; os índices das cartas não mudam, só a posição na tela */
+function sortOrd(S){
+  const rl=getRules(S),old=CR;CR=rl;
+  try{
+    S.seats.forEach(p=>{
+      const h=p.hand||[],val=n=>{const c=cardOf(n);return (c.r==='A'&&rl.ace==='pick')?(p.ace||1):c.v;};
+      p.ord=h.map((n,k)=>k).sort((a,b)=>(val(h[a])-val(h[b]))||(h[a]-h[b]));
+    });
+  }finally{CR=old;}
+}
 function startTurnS(S){
   S.sel0=[];S.sel1=[];
+  sortOrd(S);
   while(true){
     if(S.turn>3){S.phase='parity';S.prop=null;S.picker=Math.random()<0.5?0:1;S.deadline=Date.now()+PARITY_LEAD+CHOICE_MS;S.seats.forEach(p=>{p.acted=false;});return;}
     S.seats.forEach(p=>{p.tt=0;if(!p.done&&p.traded>=getRules(S).maxT)p.done=true;p.acted=p.done;});
@@ -1656,7 +1672,7 @@ function doTrade(i,idx,up){
     if(idx.includes(rvOf(S)[i]))return false;   /* carta revelada não pode ser trocada */
     if(getRules(S).reveal==='pick'&&(rvOf(S)[0]<0||rvOf(S)[1]<0))return false;
     if(!S.disc)S.disc=[];
-    idx.forEach(k=>{S.disc.push(up?{u:1,c:p.hand[k],s:i}:{u:0,s:i});p.hand[k]=S.deck.pop();});
+    idx.forEach(k=>{S.disc.push(up?{u:1,c:p.hand[k],s:i}:{u:0,c:p.hand[k],s:i});p.hand[k]=S.deck.pop();});   /* c também nas ocultas: só o espectador as vê (a tela dos jogadores continua mostrando o verso) */
     p.traded+=idx.length;p.tt=(p.tt||0)+idx.length;p.lastNew=idx;S['sel'+i]=[];
     /* o turno só passa sozinho quando 2 cartas já foram trocadas (ou acabaram as trocas); com 1 carta, o jogador escolhe: trocar outra ou terminar o turno */
     if(p.tt>=2||p.traded>=getRules(S).maxT){p.acted=true;if(S.turn===3||p.traded>=getRules(S).maxT)p.done=true;}
@@ -2017,7 +2033,7 @@ function discSplit(n,D){
 }
 function setDisc(n){
   n=Math.max(0,n);
-  const S0=mine&&tables[mine.tid],D=(S0&&S0.disc)||[],sp=discSplit(n,D);
+  const S0=mine?tables[mine.tid]:(spec?tables[spec.tid]:null),D=(S0&&S0.disc)||[],sp=discSplit(n,D);
   const d=$('#disc');if(d)d.innerHTML=stackHTML(sp.h);
   const du=$('#discUp');if(du)du.innerHTML=stackHTML(sp.u);
   const l=$('#hlab');if(l)l.textContent='Ocultas · '+sp.h.length;
@@ -2072,7 +2088,7 @@ function gameHTML(S,i){
   const oppPanel=`<div class="panel${reveal?' mini':''}"><div class="who"><b>${esc(opp.name)}${reveal&&S.winner===1-i?'':''}</b><span>${showPar&&opp.parity?badge(opp.parity):''}${chip(1-i)}</span></div>${reveal?handStatic(opp.hand,null,'opphand','mini5 rev')+`<div class="sum"><span>Soma</span><b id="oppsum">${seatSum(S,1-i)}</b></div>`:backs(oppSel,S,1-i)}</div>`;
   const sumBox=`<div class="sum"><span>Sua soma</span>${showPar&&me.parity?badge(me.parity):''}${chip(i)}<b id="mysum">${seatSum(S,i)}</b>${CR.ace==='pick'&&S.status==='playing'&&(S.phase==='trade'||S.phase==='parity')?`<button class="acebtn" id="ace">Ás vale ${me.ace===11?11:1}</button>`:''}</div>`;
   const top=bar+betRowHTML(S,i)+oppPanel+feltHTML(S,i)+ev;
-  const myHand=nw=>handStatic(me.hand,nw||null,'hand');
+  const myHand=nw=>handStatic(me.hand,nw||null,'hand','',me);
 
   if(S.phase==='trade'){
     if(getRules(S).reveal==='pick'&&S.turn===1&&(rvOf(S)[0]<0||rvOf(S)[1]<0)){
@@ -2082,7 +2098,8 @@ function gameHTML(S,i){
     const oppState=opp.acted?`<b>${esc(opp.name)}</b> já jogou`:`<b>${esc(opp.name)}</b> está escolhendo...`;
     if(!me.acted&&!me.done){
       const max=maxTrade(S,i);
-      const hand=me.hand.map((n,x)=>`<button class="slot${x===rvOf(S)[i]?' locked':''}" data-i="${x}" aria-label="carta ${x+1}${x===rvOf(S)[i]?' (revelada, não pode ser trocada)':''}">${cardHTML(cardOf(n))}</button>`).join('');
+      const mpos=ordPos(me,me.hand.length);
+      const hand=me.hand.map((n,x)=>`<button class="slot${x===rvOf(S)[i]?' locked':''}" data-i="${x}"${mpos?` style="order:${mpos[x]}"`:''} aria-label="carta ${x+1}${x===rvOf(S)[i]?' (revelada, não pode ser trocada)':''}">${cardHTML(cardOf(n))}</button>`).join('');
       return G(top,`<div class="hand" id="hand">${hand}</div>`+sumBox+
         `<p class="hint">Escolha até <b>${max}</b> e toque no monte <b>Ocultas</b> ou <b>Mostradas</b> · neste turno ${me.tt||0}/2 · ${oppState}</p>`,
         `<button class="btn" id="endturn">Terminar turno</button><button class="btn ghost" id="direct">Ir direto para Par ou Ímpar</button>`+leave);
@@ -2212,7 +2229,8 @@ async function sceneCard(icon,title,sub,ms,cls,delay){
 const TURN_MS=3000;
 function turnScene(n,delay){
   const dots=[1,2,3].map(k=>`<i class="${k<=n?'on':''}"></i>`).join('');
-  const sub=n>=3?'<b>Última chance</b> de trocar cartas.<br>Os dois jogam ao mesmo tempo.':'Faça suas trocas (até 2 por turno).<br>Os dois jogam ao mesmo tempo.';
+  const sp=isSpec();
+  const sub=n>=3?(sp?'<b>Última chance</b> de trocar cartas.<br>Os dois jogam ao mesmo tempo.':'<b>Última chance</b> de trocar cartas.<br>Os dois jogam ao mesmo tempo.'):(sp?'Os jogadores trocam cartas (até 2 por turno).<br>Os dois jogam ao mesmo tempo.':'Faça suas trocas (até 2 por turno).<br>Os dois jogam ao mesmo tempo.');
   return sceneCard(`<span class="tdots">${dots}</span>`,'TURNO '+n,sub,TURN_MS,'turn',delay);
 }
 function flashWord(t,cls){
@@ -2308,7 +2326,7 @@ function animDeal(base){
   const deckR=rectOf($('#deck')),jobs=[];let n=0;
   const mineEls=[...document.querySelectorAll('#hand .slot')],oppEls=[...document.querySelectorAll('#opphand .slot')];
   for(let k=0;k<Math.max(mineEls.length,oppEls.length);k++){
-    [oppEls[k],mineEls[k]].forEach((el,w)=>{if(el)jobs.push(flyIn(el,deckR,{delay:base+n*Math.min(180,2000/(2*Math.max(mineEls.length,oppEls.length))),dur:850,face:w===1}));n++;});
+    [oppEls[k],mineEls[k]].forEach((el,w)=>{if(el)jobs.push(flyIn(el,deckR,{delay:base+n*Math.min(180,2000/(2*Math.max(mineEls.length,oppEls.length))),dur:850,face:w===1||isSpec()}));n++;});
   }
   return Promise.all(jobs);
 }
@@ -2316,6 +2334,7 @@ function animDeal(base){
 /* troca de cartas (minha ou do oponente): sai para o descarte, entra do baralho */
 function animTrade(isMe,a,b,before,S){
   const idx=b.lastNew,jobs=[],deckR=rectOf($('#deck'));
+  const vis=isMe||isSpec();   /* espectador vê as cartas dos dois jogadores */
   const skipOut=isMe&&localOut;if(isMe)localOut=false;
   let inDelay=0;
   if(!skipOut){
@@ -2324,13 +2343,13 @@ function animTrade(isMe,a,b,before,S){
     discShown-=outs.length;
     outs.forEach((x,k)=>{
       const e=((S&&S.disc)||[]).slice(-idx.length)[idx.indexOf(x)],up=!!(e&&e.u);   /* descartada virada para cima? */
-      const html=isMe?`<div class="gslot">${cardHTML(cardOf(a.hand[x]))}</div>`:(up?`<div class="gslot">${cardHTML(cardOf(e.c))}</div>`:`<div class="gslot"><div class="back"></div></div>`);
-      jobs.push(outFlight(html,rects[x],k*220,isMe?!up:(up?'up':false),up));
+      const html=vis?`<div class="gslot">${cardHTML(cardOf(a.hand[x]))}</div>`:(up?`<div class="gslot">${cardHTML(cardOf(e.c))}</div>`:`<div class="gslot"><div class="back"></div></div>`);
+      jobs.push(outFlight(html,rects[x],k*220,vis?!up:(up?'up':false),up));
     });
     inDelay=outs.length?800:0;
   }else inDelay=450;
   const els=[...document.querySelectorAll(isMe?'#hand .slot':'#opphand .slot')];
-  idx.forEach((x,k)=>{if(els[x])jobs.push(flyIn(els[x],deckR,{delay:inDelay+k*250,dur:IN_MS,face:isMe}));});
+  idx.forEach((x,k)=>{if(els[x])jobs.push(flyIn(els[x],deckR,{delay:inDelay+k*250,dur:IN_MS,face:vis}));});
   return Promise.all(jobs);
 }
 
@@ -2400,7 +2419,7 @@ async function animResult(S,i){
 async function runDice(S){
   animating=true;
   try{
-    const me=mine?mine.seat:0,pk=pickerOf(S),pp=S.seats[pk].parity,op=S.seats[1-pk].parity;
+    const me=mine?mine.seat:-1,pk=pickerOf(S),pp=S.seats[pk].parity,op=S.seats[1-pk].parity;
     const pn=pk===me?'Você':S.seats[pk].name;
     const other=pk===me?esc(S.seats[1-pk].name)+' fica':'Você fica';
     await sceneCard('',`${pn} escolheu ${pp==='par'?'PAR':'ÍMPAR'}`,'Hora de rolar os dados!',3600);
@@ -2439,10 +2458,59 @@ async function runDice(S){
     o.remove();box.remove();bt.remove();
     await sleep(500);
     if(S.phase==='choose'){
-      const meSeat=mine?mine.seat:0;
+      const meSeat=mine?mine.seat:-1;
       if(S.fm)await sceneCard('',S.fm.toUpperCase(),'',3200,'vm');else await sceneCard('','VIDA OU MORTE',S.win===meSeat?'Você acertou!<br>A decisão é sua.':`${esc(S.seats[S.win].name)} acertou<br>e vai decidir.`,4000,'vm');
     }
   }finally{document.querySelectorAll('.dbig,.dsum').forEach(e=>e.remove());document.querySelectorAll('.rvdark').forEach(e=>e.remove());animDone=S.rollAt;animating=false;lastKey='';renderAll();}
+}
+
+/* ---------- cartas em ordem crescente: se juntam à esquerda e voltam espalhadas ---------- */
+/* linhas de cartas da tela: a minha mão (ordenada) e a do oponente (versos; o espectador vê as duas ordenadas) */
+const rowsOf=(S,i)=>[['#hand',S.seats[i]],['#opphand',isSpec()?S.seats[1-i]:null]];
+function applyOrdTo(sel,p){
+  const els=[...document.querySelectorAll(sel+' .slot')],pos=p?ordPos(p,els.length):null;
+  els.forEach((e,k)=>{e.style.order=pos?pos[k]:'';});
+}
+const naturalRows=(S,i)=>rowsOf(S,i).forEach(r=>applyOrdTo(r[0],null));   /* ordem em que foram dadas */
+const oldOrdRows=(p,i)=>rowsOf(p,i).forEach(r=>applyOrdTo(r[0],r[1]));   /* ordem do turno que acabou */
+const stackFx=(r,n)=>({dy:-r*1.4,rot:(r-(n-1)/2)*1.4,ox:r*2.5});
+function gatherRows(S,i){
+  const held=[];
+  rowsOf(S,i).forEach(([sel,q])=>{
+    const els=[...document.querySelectorAll(sel+' .slot')];
+    if(!els.length||!els[0].animate)return;
+    const rs=els.map(e=>e.getBoundingClientRect()),L=Math.min(...rs.map(r=>r.left));
+    const vis=els.map((e,k)=>k).sort((a,b)=>rs[a].left-rs[b].left);
+    const anims=vis.map((k,r)=>{
+      const f=stackFx(r,vis.length);
+      return els[k].animate([{transform:'none'},{transform:`translate(${L-rs[k].left+f.ox}px,${f.dy}px) rotate(${f.rot}deg)`}],{duration:430,delay:r*28,easing:'cubic-bezier(.45,.05,.25,1)',fill:'forwards'});
+    });
+    held.push({sel,q,els,L,anims});
+  });
+  if(held.length)Snd.sfx('deal');
+  return Promise.all(held.reduce((a,h)=>a.concat(h.anims.map(x=>x.finished.catch(()=>{}))),[])).then(()=>held);
+}
+async function spreadRows(held,S,i){
+  if(!held||!held.length)return;
+  const jobs=[];
+  held.forEach(h=>{
+    h.anims.forEach(a=>{try{a.cancel();}catch(e){}});   /* volta ao layout normal... */
+    const pos=h.q?ordPos(h.q,h.els.length):null;
+    h.els.forEach((e,k)=>{e.style.order=pos?pos[k]:'';});   /* ...já na ordem nova (crescente) */
+    const rs=h.els.map(e=>e.getBoundingClientRect()),vis=h.els.map((e,k)=>k).sort((a,b)=>rs[a].left-rs[b].left);
+    vis.forEach((k,r)=>{
+      const f=stackFx(r,vis.length);
+      const a=h.els[k].animate([{transform:`translate(${h.L-rs[k].left+f.ox}px,${f.dy}px) rotate(${f.rot}deg)`},{transform:'none'}],{duration:520,delay:r*55,easing:'cubic-bezier(.3,.7,.2,1)',fill:'backwards'});
+      jobs.push(a.finished.catch(()=>{}));
+    });
+  });
+  Snd.sfx('deal');
+  await Promise.all(jobs);
+}
+async function sortRows(S,i){   /* distribuição: junta e volta em ordem crescente */
+  const h=await gatherRows(S,i);
+  await sleep(220);
+  await spreadRows(h,S,i);
 }
 
 /* decide quais animações tocar comparando o estado anterior com o novo */
@@ -2455,20 +2523,28 @@ function transition(p,S,i,before){
   if(!holdDeal&&S.status==='playing'&&fresh&&S.turn===1&&S.phase==='trade'&&S.seats.every(s=>!s.acted&&!s.traded)){
     let base=0;
     if(p&&p.status==='finished'&&prevDisc>0){const sw=animDiscToDeck(prevDisc,p.disc);base=sw.ms;tasks.push(sw.done);}   /* descarte volta ao monte */
-    Snd.sfx('start');tasks.push(animDeal(base).then(()=>turnScene(1,250)));   /* depois que as cartas pousam: TURNO 1 */
+    Snd.sfx('start');naturalRows(S,i);   /* as cartas chegam na ordem em que foram dadas */
+    tasks.push(animDeal(base).then(()=>sortRows(S,i)).then(()=>turnScene(1,250)));   /* juntam, voltam em ordem crescente e então: TURNO 1 */
   }else if(p&&p.status==='playing'&&S.status==='playing'){
+    const adv=(S.turn>p.turn&&S.phase==='trade')||(S.phase==='parity'&&p.phase==='trade');   /* acabou o turno */
+    if(adv)oldOrdRows(p,i);   /* as trocas voam nas posições do turno que acabou */
     for(const k of [i,1-i]){
       const a=p.seats[k],b=S.seats[k];
       if(b.traded>a.traded&&b.lastNew&&b.lastNew.length)tasks.push(animTrade(k===i,a,b,before,S));
       else if(k!==i&&b.acted&&!a.acted)Snd.sfx('blip');
     }
-    if(S.turn>p.turn&&S.phase==='trade'){const prior=Promise.all(tasks.slice());tasks.push(prior.then(()=>turnScene(S.turn,300)));}   /* depois das trocas voarem: TURNO 2 / TURNO 3 */
-    if(S.phase==='parity'&&p.phase==='trade'){
-      const pk=pickerOf(S);
-      sceneCard('','PAR OU ÍMPAR',pk===i?'<b>Você</b> foi sorteado<br>para escolher.':`<b>${esc(S.seats[pk].name)}</b> foi sorteado<br>para escolher.`,4200,'',tasks.length?1100:300).then(()=>{holdParity=0;lastKey='';renderAll();});
+    if(adv){
+      /* fim do turno: depois das trocas voarem, as cartas se juntam e ficam juntas até a cena terminar; então voltam em ordem crescente */
+      const held=Promise.all(tasks.slice()).then(()=>gatherRows(S,i));
+      if(S.phase==='parity'){
+        const pk=pickerOf(S);
+        tasks.push(held.then(h=>sceneCard('','PAR OU ÍMPAR',(pk===i&&!isSpec())?'<b>Você</b> foi sorteado<br>para escolher.':`<b>${esc(S.seats[pk].name)}</b> foi sorteado<br>para escolher.`,4200,'',150).then(()=>spreadRows(h,S,i))).then(()=>{holdParity=0;lastKey='';}));
+      }else{
+        tasks.push(held.then(h=>turnScene(S.turn,150).then(()=>spreadRows(h,S,i))));   /* TURNO 2 / TURNO 3 */
+      }
     }
   }
-  if(p&&p.status==='playing'&&S.status==='finished')tasks.push(animResult(S,i));
+  if(p&&p.status==='playing'&&S.status==='finished')tasks.push(isSpec()?specResult(S):animResult(S,i));
   if(p&&p.status==='playing'&&S.status==='abandoned'){Snd.sfx('win');Snd.duck(2500);}
   setDisc(discShown);
   if(tasks.length)lock(Promise.all(tasks),(p&&p.status==='playing'&&S.status==='finished')?24000:14000);
@@ -2490,8 +2566,17 @@ function pushSel(){
   if(!mine||!fs)return;
   fs.doc('tables/'+mine.tid).update({['sel'+mine.seat]:[...sel].sort((a,b)=>a-b)}).catch(()=>{});
 }
+function paintSpecSel(){
+  const S=spec&&tables[spec.tid];
+  if(!S||S.status!=='playing'||S.phase!=='trade')return;
+  [[0,'#hand'],[1,'#opphand']].forEach(([x,id])=>{
+    const sl=S.seats[x].acted?[]:(S['sel'+x]||[]);
+    document.querySelectorAll(id+' .slot').forEach((el,k)=>el.classList.toggle('sel',sl.includes(k)));
+  });
+}
 function paintOppSel(){
-  if(!mine)return;const S=tables[mine.tid];
+  if(!mine){paintSpecSel();return;}
+  const S=tables[mine.tid];
   if(!S||S.status!=='playing'||S.phase!=='trade')return;
   const o=1-mine.seat,sl=S.seats[o].acted?[]:(S['sel'+o]||[]);
   document.querySelectorAll('#opphand .slot').forEach((el,x)=>el.classList.toggle('sel',sl.includes(x)));
@@ -2678,7 +2763,8 @@ function revealArrow(p,S,i){
 }
 /* ---------- espectador: até 5 pessoas por mesa cheia, só olhando (as duas mãos abertas) ---------- */
 const SPEC_MAX=5;
-let spec=null;
+let spec=null,specPrev=null;
+const isSpec=()=>!mine&&!!spec;
 const specName=()=>getNick()||(USER||'').slice(0,16)||'Visitante';
 const specCount=tid=>Object.keys(pres).filter(k=>{const q=pres[k];return q&&q.spec===tid&&Date.now()-(q.ts||0)<PRES_TTL;}).length;
 async function startSpec(tid){
@@ -2686,40 +2772,106 @@ async function startSpec(tid){
   const S=tables[tid];
   if(!S||!S.seats||S.seats.filter(x=>x.uid&&!x.left).length<2){toast('A mesa não está cheia.');return;}
   if(specCount(tid)>=SPEC_MAX){toast('Essa mesa já tem '+SPEC_MAX+' espectadores.');return;}
-  spec={tid};
+  spec={tid};specPrev=null;discShown=0;holdParity=0;
   try{await fs.doc('presence/'+DEV).set({dev:DEV,uid,spec:tid,name:specName(),ts:Date.now()});}
   catch(e){spec=null;toast('Não foi possível entrar como espectador.');return;}
   Snd.sfx('click');lastKey='';renderAll();
 }
 function stopSpec(){
-  spec=null;
+  spec=null;specPrev=null;holdParity=0;
   if(fs&&DEV)fs.doc('presence/'+DEV).delete().catch(()=>{});
   lastKey='';renderAll();
 }
+function specHand(S,x,id){
+  const p=S.seats[x],rv=rvOf(S)[x],pos=ordPos(p,p.hand.length);
+  const sl=(S.status==='playing'&&S.phase==='trade'&&!p.acted)?(S['sel'+x]||[]):[];
+  return `<div class="hand spw" id="${id}">${p.hand.map((n,k)=>`<div class="slot static${sl.includes(k)?' sel':''}${k===rv?' locked':''}"${pos?` style="order:${pos[k]}"`:''}>${cardHTML(cardOf(n))}</div>`).join('')}</div>`;
+}
+/* a partida vista de fora: mesma mesa, mesmas animações, as duas mãos abertas (seat 1 em cima, seat 0 embaixo) */
 function specHTML(S){
   CR=getRules(S);
-  if(S.rollAt)animDone=S.rollAt;   /* espectador não assiste à animação: dados já aparecem */
+  if(S.rollAt&&animDone!==S.rollAt&&Date.now()-S.rollAt>ROLL_MS+600)animDone=S.rollAt;
+  if(S.phase==='parity'&&specPrev&&specPrev.id===S.id&&specPrev.phase==='trade')holdParity=S.deadline;
+  const holdP=S.phase==='parity'&&holdParity===S.deadline&&Date.now()<S.deadline-CHOICE_MS;
+  const rolling=isRolling(S),RL=getRules(S);
   const k=TABLE_IDS.indexOf(S.id)+1,n=specCount(S.id),fin=S.status==='finished';
-  const ph={trade:'Trocando cartas',parity:'Par ou Ímpar',choose:'Vida ou Morte',result:'Resultado'}[S.phase]||'';
-  const stTxt=S.status==='starting'?'Iniciando':(S.status==='playing'?ph+(S.phase==='trade'?' · Turno '+S.turn+' de 3':''):(fin?'Partida encerrada':''));
-  const panel=x=>{
-    const p=S.seats[x],showPar=(S.phase==='choose'||S.phase==='result')&&p.parity;
-    const chip=(fin&&S.win===x)?` <span class="badge rvl ${S.choice==='vida'?'v':'m'}">${S.choice==='vida'?'VIDA':'MORTE'}</span>`:'';
-    const st=(S.status==='playing'&&S.phase==='trade')?(p.acted?' ✓':' …'):'';
-    return `<div class="panel spp"><div class="who"><b>${esc(p.name||'—')}${st}</b><span>${showPar?badge(p.parity):''}${chip}</span></div>${handStatic(p.hand,null,'','spx')}<div class="sum"><span>Soma</span><b>${seatSum(S,x)}</b></div></div>`;
+  const inTrade=S.status==='playing'&&S.phase==='trade';
+  const timed=S.status==='playing'&&(S.phase==='trade'||S.phase==='parity'||S.phase==='choose');
+  const nm=x=>esc(S.seats[x].name||'—');
+  const bar=`<div class="topbar"><span class="pill">👁 ${isPriv(S.id)?'Privada':'Mesa '+k}${inTrade?' · Turno '+S.turn+' de 3':''}${RL.series>1?' · Rodada '+(S.round||1)+'/'+RL.series+' ('+S.wins[0]+'x'+S.wins[1]+')':''}</span><span class="pill">${S.fr?'🤝 Amistoso':'🪙 Pote '+betOf(S)*2}</span>${timed?'<span class="pill timer" id="tm"></span>':''}<span class="pill">${n}/${SPEC_MAX}</span></div>`;
+  const G=(top,mid,bot)=>`<div class="gm"><div class="gtop">${top}</div><div class="gmid">${mid||''}</div><div class="gbot">${bot||''}</div></div>`;
+  const leave=`<button class="btn ghost leave" id="specx">Voltar ao lobby</button>`;
+  const showPar=(S.phase==='choose'||S.phase==='result')&&!rolling&&!holdP;
+  const chip=x=>(fin&&S.win===x)?` <span class="badge rvl ${S.choice==='vida'?'v':'m'}">${S.choice==='vida'?'VIDA':'MORTE'}</span>`:'';
+  const panel=(x,id)=>{
+    const p=S.seats[x],st=inTrade?(p.acted?' ✓':' …'):'';
+    return `<div class="panel"><div class="who"><b>${nm(x)}${st}</b><span>${showPar&&p.parity?badge(p.parity):''}${chip(x)}</span></div>${specHand(S,x,id)}${p.hand.length?`<div class="sum"><span>Soma</span><b>${seatSum(S,x)}</b></div>`:''}</div>`;
   };
-  const w=S.winner;
-  const banner=fin?`<div class="banner ${w>=0?'win':'draw'}">${w>=0?esc(S.seats[w].name)+' venceu':'Empate'}<small>${S.choice&&S.seats[S.win]?esc(S.seats[S.win].name)+' escolheu '+(S.choice==='vida'?'VIDA':'MORTE'):''}</small></div>`:'';
-  const ev=(S.events&&S.events.length)?`<div class="events">${esc(S.events[S.events.length-1])}</div>`:'';
-  return `<div class="topbar"><span class="pill">👁 Espectando · ${isPriv(S.id)?'Mesa privada':'Mesa '+k}</span><span class="pill">${n}/${SPEC_MAX}</span></div>
-    <div class="topbar"><span class="pill">${stTxt}</span><span class="pill">${S.fr?'🤝 Amistoso':'🪙 Pote '+betOf(S)*2}</span></div>
-    ${panel(0)}${feltHTML(S,0)}${panel(1)}${banner}${ev}<button class="btn ghost leave" id="specx">Sair da inspeção</button>`;
+  if(S.status==='starting')return G(bar+panel(1,'opphand'),`<div class="wait soft"><h2>${nm(0)} x ${nm(1)}</h2><p class="sub" style="color:var(--gold);font-weight:700">A partida vai começar...</p></div>`,leave);
+  const ev=(!holdP&&!rolling&&S.events&&S.events.length)?`<div class="events">${esc(S.events[S.events.length-1])}</div>`:'';
+  const top=bar+panel(1,'opphand')+feltHTML(S,0)+ev;
+  const me=panel(0,'hand');
+  if(S.phase==='trade'){
+    const st=x=>S.seats[x].acted?'já jogou':'está escolhendo...';
+    return G(top,me+`<p class="hint"><b>${nm(0)}</b> ${st(0)} · <b>${nm(1)}</b> ${st(1)}</p>`,leave);
+  }
+  if(S.phase==='parity'){
+    const pk=pickerOf(S);
+    return G(top,me+`<p class="hint">${holdP?'Sorteando...':'<b>'+nm(pk)+'</b> está escolhendo Par ou Ímpar'}</p>`,leave);
+  }
+  const total=S.dice[0]+S.dice[1];
+  if(rolling)return G(top,me+`<div class="dcap" id="dcap">Rolando os dados...</div>`,leave);
+  const cap=`<div class="dcap" id="dcap">Soma ${total}: <b>${total%2===0?'PAR':'ÍMPAR'}</b></div>`;
+  if(S.phase==='choose'){
+    if(S.fm)return G(top,me+cap+`<p class="hint"><b>${S.fm.toUpperCase()}</b></p>`,leave);
+    return G(top,me+cap+`<p class="hint"><b>${nm(S.win)}</b> está escolhendo Vida ou Morte</p>`,leave);
+  }
+  const sums=S.seats.map((x,q)=>seatSum(S,q));
+  const reason=`${S.choice==='vida'?'VIDA':'MORTE'} · ${nm(0)} ${sums[0]} x ${sums[1]} ${nm(1)}`;
+  const banner=S.winner<0?`<div class="banner draw">Empate<small>${reason}</small></div>`:`<div class="banner win">${nm(S.winner)} venceu!<small>${reason}</small></div>`;
+  const ser=RL.series>1?`<p class="hint">Série: ${nm(0)} ${S.wins[0]} x ${S.wins[1]} ${nm(1)}</p>`:'';
+  return G(top,me+banner+ser,leave);
+}
+/* cartas descartadas, todas viradas para cima (inclusive as ocultas dos jogadores) */
+function openDiscView(S,up){
+  if(document.querySelector('.upview'))return;
+  const D=(S.disc||[]).filter(e=>e&&(up?e.u:!e.u));
+  if(!D.length){toast(up?'Nenhuma carta foi mostrada ainda.':'Nenhuma carta foi ocultada ainda.');return;}
+  CR=getRules(S);
+  const A=D.filter(e=>e.s===0),B=D.filter(e=>e.s!==0);
+  const one=(e,k,c)=>`<div class="upc ${c}" style="--d:-${((k*.43)%2.4).toFixed(2)}s;--a:${(k%2?-1:1)*(2+(k%3))}deg"><div class="gslot">${e.c===undefined?'<div class="back"></div>':cardHTML(cardOf(e.c))}</div></div>`;
+  const o=document.createElement('div');o.className='upview';
+  o.innerHTML=`<div class="upcap"><span class="lg me">${esc(S.seats[0].name||'—')}</span><span class="lg op">${esc(S.seats[1].name||'—')}</span></div><div class="upgrid">${A.map((e,k)=>one(e,k,'me')).join('')}${A.length&&B.length?'<div class="upbr"></div>':''}${B.map((e,k)=>one(e,k+A.length,'op')).join('')}</div><div class="uphint">${up?'Descartes mostrados':'Descartes ocultos'} · toque para fechar</div>`;
+  document.body.appendChild(o);
+  if(o.animate)o.animate([{opacity:0},{opacity:1}],{duration:260,fill:'both'});
+  Snd.sfx('select');
+  o.onclick=()=>{
+    const a=o.animate?o.animate([{opacity:1},{opacity:0}],{duration:200,fill:'both'}):null;
+    if(a)a.finished.then(()=>o.remove()).catch(()=>o.remove());else o.remove();
+  };
+}
+/* resultado visto de fora: as cartas já estão abertas, então só o suspense, a palavra VIDA/MORTE e o banner */
+async function specResult(S){
+  const banner=document.querySelector('.banner');
+  if(banner){banner.style.animation='none';banner.style.opacity='0';}
+  document.querySelectorAll('.rvl').forEach(e=>{e.style.visibility='hidden';});
+  await sceneCard('','HORA DA VERDADE','Vamos ver o resultado...',3000);
+  await suspenseReveal(S.choice);
+  if(banner){
+    banner.style.opacity='';
+    if(banner.animate)banner.animate([{transform:'scale(.6)',opacity:0},{transform:'scale(1.08)',opacity:1,offset:.6},{transform:'scale(1)',opacity:1}],{duration:450,easing:'ease-out'});
+  }
+  if(S.winner<0)Snd.sfx('draw');else{Snd.sfx('win');confetti();}
+  Snd.duck(3500);
+  await sleep(900);
+  document.querySelectorAll('.rvl').forEach(e=>{e.style.visibility='';});
 }
 function bindSpec(S){
   const x=$('#specx');if(x)x.onclick=stopSpec;
   const hp=$('#disc'),sp=$('#discUp');
-  if(hp)hp.onclick=()=>toast('Cartas ocultas ninguém vê.');
-  if(sp)sp.onclick=()=>openUpView(S,0);
+  if(hp)hp.onclick=()=>openDiscView(S,false);
+  if(sp)sp.onclick=()=>openDiscView(S,true);
+  if($('#dice')&&!animating&&S.rollAt&&animDone!==S.rollAt)runDice(S);   /* mesma animação dos dados dos jogadores */
 }
 function renderAll(force){
   if(!force&&(animating||animLock>0))return;
@@ -2730,7 +2882,8 @@ function renderAll(force){
   if(!mine&&V.on)voiceStop();
   paintVoice();paintCoins();paintBet();paintInvite();
   const T=mine?tables[mine.tid]:null;
-  const key=JSON.stringify(mine?[T?Object.assign({},T,{sel0:0,sel1:0}):T,animDone,invSt()]:[tables,canWrite,ready,!!db,!!uid,wallet.coins,wallet.ok,wallet.err,wallet.blocked,wallet.frozen,ADMIN,spec?spec.tid:'',TABLE_IDS.map(specCount).join()]);
+  const SX=spec?tables[spec.tid]:null;
+  const key=JSON.stringify(mine?[T?Object.assign({},T,{sel0:0,sel1:0}):T,animDone,invSt()]:(spec?['spec',spec.tid,SX?Object.assign({},SX,{sel0:0,sel1:0}):SX,animDone,specCount(spec.tid)]:[tables,canWrite,ready,!!db,!!uid,wallet.coins,wallet.ok,wallet.err,wallet.blocked,wallet.frozen,ADMIN,'',TABLE_IDS.map(specCount).join()]));
   if(key===lastKey){paintOppSel();return;}lastKey=key;
   $('#top').style.display=mine?'none':'block';applyTab();
   const v=$('#view');
@@ -2739,7 +2892,14 @@ function renderAll(force){
     const S0=tables[spec.tid];
     if(!S0||!S0.seats||S0.seats.filter(x=>x.uid&&!x.left).length<2){toast('A mesa esvaziou. Voltando ao lobby.');stopSpec();return;}
     $('#top').style.display='none';prev=null;lastView='spec';v.className='';
-    v.innerHTML=specHTML(S0);bindSpec(S0);Snd.mode(musicFor(S0));return;
+    if(!force&&specPrev&&specPrev.id===S0.id&&specPrev.status==='starting'&&S0.status==='playing'){bridgeIn(S0,0);return;}   /* "BOA SORTE!": embaralha e distribui, como para os jogadores */
+    const qs=sl=>[...document.querySelectorAll(sl)].map(e=>e.getBoundingClientRect());
+    const before={me:qs('#hand .slot'),opp:qs('#opphand .slot')};
+    v.innerHTML=specHTML(S0);bindSpec(S0);paintTimerNow();
+    const sp0=(specPrev&&specPrev.id===S0.id)?specPrev:null;
+    specPrev=S0;
+    transition(sp0,S0,0,before);
+    Snd.mode(musicFor(S0));return;
   }
   if(!mine){
     prev=null;
@@ -2764,7 +2924,7 @@ function renderAll(force){
 /* ---------- temporizador ---------- */
 let tickKey='',lastTick=-1;
 function paintTimerNow(){
-  if(!mine)return;const S=tables[mine.tid];
+  const S=mine?tables[mine.tid]:(spec?tables[spec.tid]:null);if(!S)return;
   if(!S||S.status!=='playing'||(S.phase!=='trade'&&S.phase!=='parity'&&S.phase!=='choose'))return;
   const total=(S.phase==='trade'?getRules(S).tms:15),hold=S.prop||S.refund||S.pz,ms=S.deadline-(hold?hold.ts:Date.now());
   const left=Math.min(total,Math.ceil(ms/1000)),low=left<=(S.phase==='trade'?10:5);
@@ -2774,7 +2934,7 @@ function paintTimerNow(){
   if(tb)tb.classList.toggle('low',low);
 }
 setInterval(()=>{
-  if(!mine)return;
+  if(!mine){if(spec)paintTimerNow();return;}   /* espectador só vê o relógio, nunca dispara tempo esgotado */
   const S=tables[mine.tid];
   if(S&&S.status==='starting'){
     const cd=$('#cd');if(cd)cd.textContent=(S.prop||S.refund)?'Aposta em análise':'Começando em '+Math.max(0,Math.ceil((S.startAt-Date.now())/1000))+'s';
@@ -3381,7 +3541,7 @@ function dealToHands(src){
     const dx=t.left+t.width/2-(src.left+src.width/2),dy=t.top+t.height/2-(src.top+src.height/2),sc=t.width/src.width,dl=c*step;c++;
     setTimeout(()=>Snd.sfx('deal'),dl);
     const a=g.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(${sc}) rotate(${w?3:-3}deg)`}],{duration:720,delay:dl,easing:'cubic-bezier(.25,.8,.25,1)',fill:'both'});
-    const land=()=>{el.classList.add('dealt');g.remove();if(w===1)flipIn(el,FLIP_MS,0);};
+    const land=()=>{el.classList.add('dealt');g.remove();if(w===1||isSpec())flipIn(el,FLIP_MS,0);};
     jobs.push(a.finished.then(land).catch(()=>{land();}));
   });
   return Promise.all(jobs);
@@ -3400,11 +3560,13 @@ function bridgeIn(S,i){
       lastKey='';holdDeal=true;
       try{renderAll(true);}catch(e){console.error(e);}
       holdDeal=false;
+      try{naturalRows(S,i);}catch(e){}   /* as cartas pousam na ordem em que foram dadas */
       const src=await shuffleScene(d.querySelector('.shuf'),(S.seats[i].hand&&S.seats[i].hand.length)||5);
       /* a tela verde some para cima enquanto as cartas já vão direto para a mesa */
       const fade=d.animate?d.animate([{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-48px)'}],{duration:900,easing:'ease-in',fill:'forwards'}):null;
       if(fade)fade.finished.catch(()=>{}).then(()=>d.remove());
       await dealToHands(src);
+      await sortRows(S,i);   /* juntam à esquerda e voltam em ordem crescente */
       await turnScene(1,250);   /* TURNO 1 */
     }catch(e){console.error(e);}
     finally{clearTimeout(kill);end();}
