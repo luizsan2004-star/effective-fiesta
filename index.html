@@ -558,6 +558,31 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
 #dfmore{border:0!important;color:var(--gold);font-size:.74rem;padding:7px 12px}
 #pfr{margin:-2px 0 10px;display:flex;flex-direction:column;gap:6px}
 #pfr .btn{margin-top:0}
+
+/* gerenciamento de contas (administrador) */
+.mw .wbox.adm{max-width:520px}
+.adm-top{display:flex;gap:8px;align-items:center;margin:0 0 8px}
+.adm-top input{flex:1;min-width:0;width:auto;margin:0;padding:11px 14px;border-radius:12px;border:1px solid #e8c35a40;background:#00000066;color:var(--ink);font:500 1rem var(--fb);outline:none}
+.adm-top input:focus{border-color:var(--gold);box-shadow:0 0 0 3px #e8c35a30}
+.adm-sum{color:var(--muted);font-size:.8rem;margin:0 2px 6px}
+.arow{display:flex;align-items:center;gap:10px;width:100%;padding:11px 10px;background:transparent;border:0;border-bottom:1px solid #ffffff14;color:var(--ink);font:600 .95rem var(--fb);cursor:pointer;text-align:left}
+.arow:active{background:#ffffff10}
+.arow .an{flex:1;min-width:0}
+.arow .an b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.arow .an small{display:block;color:var(--muted);font-weight:500;font-size:.72rem}
+.arow .ac{font-weight:700;white-space:nowrap}
+.atag{display:inline-block;border-radius:99px;padding:1px 8px;font-size:.66rem;font-weight:700;margin-left:6px;vertical-align:middle}
+.atag.bl{background:#7a0f1b;color:#ffd6da}.atag.fz{background:#1e4a73;color:#d3ecff}.atag.ad{background:#e8c35a;color:#2a1d00}
+.adm-back{background:transparent;border:0;color:var(--gold);font:600 .9rem var(--fb);cursor:pointer;padding:4px 0;margin:0 0 6px}
+.adm-kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:.88rem;margin:0 0 4px}
+.adm-kv span{color:var(--muted)}
+.adm-kv b{font-weight:600;overflow-wrap:anywhere;text-align:right}
+.adm-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.adm-row3 .btn{padding:11px 4px;font-size:.78rem}
+.dsec input[type=number]{width:100%;padding:11px 14px;border-radius:12px;border:1px solid #e8c35a40;background:#00000066;color:var(--ink);font:500 1rem var(--fb);margin-top:6px;outline:none}
+.dsec input[type=number]:focus{border-color:var(--gold);box-shadow:0 0 0 3px #e8c35a30}
+#lockbox{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:18px;background:#000e}
+#lockbox.on{display:flex}
 </style>
 </head>
 <body>
@@ -582,6 +607,7 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
 <aside class="drw-pan" role="dialog" aria-label="Menu">
   <div class="drw-head"><div class="drw-user"><i class="odot" id="dme"></i><b id="dname">Visitante</b></div><button class="rx" id="drwx" aria-label="Fechar menu" style="position:static">✕</button></div>
   <nav class="dnav">
+    <button class="nv" id="admnav" data-w="w_adm" style="display:none"><span>Gerenciar contas</span></button>
     <button class="nv" data-w="w_acc"><span>Configurações da conta</span></button>
     <button class="nv" data-w="w_add"><span>Adicionar amigo</span></button>
     <button class="nv" data-w="w_req"><span>Pedidos de amizade</span><em class="cnt" id="frbadge"></em></button>
@@ -608,6 +634,28 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
     <div class="gmsg" id="pf_pmsg"></div>
     <button class="btn" id="pf_savepw">Salvar senha</button>
   </div>
+  <div class="dsec"><h4>ID da conta</h4>
+    <p class="uhint" style="text-align:left;margin:0 0 8px">Identifica sua conta no banco de dados. Útil para suporte.</p>
+    <input type="text" id="pf_uid" readonly onfocus="this.select()">
+    <button class="btn ghost" id="pf_copyuid">Copiar ID</button>
+  </div>
+</div></div>
+
+<div class="mw" id="w_adm" role="dialog" aria-label="Gerenciar contas"><div class="wbox adm">
+  <button class="rx" data-wx aria-label="Fechar">✕</button>
+  <h3>Gerenciar contas</h3>
+  <div id="adm_listv">
+    <div class="adm-top"><input type="text" id="adm_q" placeholder="Buscar por nome" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn ghost bchg" id="adm_reload">Atualizar</button></div>
+    <div class="adm-sum" id="adm_sum"></div>
+    <div id="adm_list"></div>
+  </div>
+  <div id="adm_detv" style="display:none"></div>
+</div></div>
+
+<div id="lockbox" role="alertdialog" aria-label="Aviso da conta"><div class="wbox">
+  <h3 id="lock_t"></h3>
+  <p class="hint" id="lock_m" style="text-align:center"></p>
+  <button class="btn" id="lock_b" style="display:none"></button>
 </div></div>
 
 <div class="mw" id="w_fr" role="dialog" aria-label="Meus amigos"><div class="wbox">
@@ -994,7 +1042,7 @@ let db=null,uid=null,canWrite=null,ready=false,tables={},mine=null,sel=new Set()
 let animDone=0,animating=false,lastKey='',busy=false,firedKey='',leaveArm=false;
 let prev=null,animLock=0,localOut=false,discShown=0,lastView='',holdParity=0,selFor='';
 let DEV='',ctxErr='',betMode='',betKey='',beatKey='',presOK=false,sweeping=false,leaving=false,pres={};
-const wallet={ok:false,coins:0,err:'',zeroAt:0};
+const wallet={ok:false,coins:0,err:'',zeroAt:0,blocked:false,frozen:false,blockMsg:'',adm:false,gone:false};
 let granting=false;
 let holdDeal=false,lobbyTab='pub',myInv=null,invs=[],invKey='',invIdLast='',flT=null,creating=false;
 let USER='',loggingIn=false,savingAcct=false,savingUser=false,giving=false,hist=[],histFirst=true,histUnsub=null;
@@ -1040,19 +1088,28 @@ async function initWallet(){
     else tx.set(ref,{coins:START_COINS,uid,created:Date.now(),seen:Date.now()});
   });
   wallet.ok=true;
-  ref.onSnapshot(sn=>{if(sn.exists){const d=sn.data();wallet.coins=d.coins||0;wallet.zeroAt=d.zeroAt||0;}paintCoins();renderAll();},()=>{});
+  ref.onSnapshot(sn=>{
+    if(sn.exists){const d=sn.data();wallet.coins=d.coins||0;wallet.zeroAt=d.zeroAt||0;wallet.blocked=!!d.blocked;wallet.frozen=!!d.frozen;wallet.blockMsg=d.blockMsg||'';wallet.adm=!!d.adm;wallet.gone=false;}
+    else if(wallet.ok)wallet.gone=true;   /* a carteira sumiu: o administrador removeu esta conta */
+    paintCoins();renderAll();paintLock();
+  },()=>{});
   claimGrant();
 }
-/* conta de administrador: moedas "infinitas" para testes e doações sem gastar saldo */
-const ADMIN_USERS=['Sanm'];   /* coloque aqui o seu nome de usuário (um ou mais) */
+/* conta de administrador: moedas "infinitas" para testes e doações sem gastar saldo.
+   Quem é administrador NÃO fica mais neste arquivo: é quem tem o documento admins/<UID> no Firestore
+   (criado só por você, pelo Console do Firebase). Veja checkAdmin() mais abaixo. */
 const ADMIN_COINS=1000000000;
-const isAdmin=()=>!!USER&&ADMIN_USERS.some(a=>userKey(a)===userKey(USER));
+let ADMIN=false;
+const isAdmin=()=>ADMIN===true;
+/* saldo/conta travados pelo administrador (o próprio administrador nunca é travado) */
+const lockd=()=>!isAdmin()&&(wallet.blocked||wallet.frozen);
+const lockMsg=()=>wallet.blocked?'Sua conta está bloqueada pelo administrador.':'Seu saldo está bloqueado pelo administrador. Você não pode apostar nem enviar moedas.';
 const fmtC=c=>c>=1e8?'∞':c;
 let topping=false;
 function adminTop(){
-  if(topping||!wallet.ok||!isAdmin()||wallet.coins>=ADMIN_COINS/2)return;
+  if(topping||!wallet.ok||!isAdmin()||(wallet.coins>=ADMIN_COINS/2&&wallet.adm))return;
   topping=true;
-  fs.doc('wallets/'+DEV).set({coins:ADMIN_COINS,ts:Date.now(),zeroAt:null},{merge:true}).catch(()=>{}).then(()=>{topping=false;});
+  fs.doc('wallets/'+DEV).set({coins:ADMIN_COINS,ts:Date.now(),zeroAt:null,adm:true,blocked:false,frozen:false},{merge:true}).catch(()=>{}).then(()=>{topping=false;});
 }
 function paintCoins(){
   adminTop();
@@ -1072,14 +1129,14 @@ function paintCoins(){
 }
 /* sem moedas: depois de 30 min zerado, recebe 50 (só uma vez; zerar de novo reinicia a contagem) */
 async function claimGrant(){
-  if(!fs||!DEV||!wallet.ok||granting)return;
+  if(!fs||!DEV||!wallet.ok||granting||wallet.frozen||wallet.blocked)return;
   granting=true;
   try{
     const ref=fs.doc('wallets/'+DEV);
     await fs.runTransaction(async tx=>{
       const sn=await tx.get(ref);if(!sn.exists)return;
       const d=sn.data();
-      if((d.coins||0)>0)return;
+      if((d.coins||0)>0||d.frozen||d.blocked)return;
       if(!d.zeroAt){tx.update(ref,{zeroAt:Date.now()});return;}
       if(Date.now()-d.zeroAt<GRANT_WAIT)return;
       tx.update(ref,{coins:GRANT_COINS,zeroAt:null,ts:Date.now(),grants:(d.grants||0)+1});
@@ -1154,6 +1211,7 @@ async function commit(mut,needW,allow){
 async function claimSeat(tid){
   if(mine||busy)return;
   if(!wallet.ok){toast('Sua carteira ainda não carregou. Aguarde um instante.');return;}
+  if(lockd()){toast(lockMsg());return;}
   const name=getNick()||(USER||'').slice(0,16);
   if(!name){toast('Digite seu apelido antes de sentar.');$('#nick').focus();return;}
   try{localStorage.setItem('vom_nick',name);}catch(e){}
@@ -1576,7 +1634,7 @@ function lobbyHTML(){
     const stale=occ>0&&Date.now()-(S.ts||0)>300000;
     const poor=wallet.ok&&wallet.coins<bet;
     let btn;
-    if(S.status==='open'&&!full)btn=`<button class="btn" data-sit="${tid}" ${(canWrite===false||poor||!wallet.ok)?'disabled':''}>${poor?'Moedas insuficientes':'Sentar na mesa '+(k+1)}</button>`;
+    if(S.status==='open'&&!full)btn=`<button class="btn" data-sit="${tid}" ${(canWrite===false||poor||!wallet.ok||lockd())?'disabled':''}>${poor?'Moedas insuficientes':'Sentar na mesa '+(k+1)}</button>`;
     else btn=`<button class="btn ghost" disabled>${full?'Mesa cheia':'Aguardando saída'}</button>`;
     if(stale)btn+=`<button class="btn ghost" data-free="${tid}">Liberar mesa</button>`;
     return `<div class="tbl"><h3>Mesa ${k+1}<span class="st ${S.status==='open'?'open':'play'}">${st}</span></h3>
@@ -1586,7 +1644,8 @@ function lobbyHTML(){
   const broke=(wallet.ok&&wallet.coins<=0)?`<div class="warn">Você está sem moedas. Depois de 30 minutos zerado, o sistema dá <b>🪙${GRANT_COINS}</b> (uma vez).</div>`:'';
   const bal=`<div class="panel wal"><span>Suas moedas<em class="wgo">Toque para abrir a carteira</em></span><div><b>🪙 ${wallet.ok?fmtC(wallet.coins):'...'}</b><small id="walt"></small></div></div>`;
   const priv=`<div class="pbrow"><button class="pbtn" id="privopen">Criar mesa privada</button></div>`;
-  return bal+priv+warn+broke+`<div class="lgrid">${cards}</div>`;
+  const frz=(!isAdmin()&&wallet.frozen&&!wallet.blocked)?'<div class="warn">Seu saldo está bloqueado pelo administrador. Você não pode apostar nem enviar moedas.</div>':'';
+  return bal+priv+warn+frz+broke+`<div class="lgrid">${cards}</div>`;
 }
 
 /* mesa: baralho + descarte */
@@ -2001,7 +2060,7 @@ function renderAll(force){
   if(!mine&&V.on)voiceStop();
   paintVoice();paintCoins();paintBet();paintInvite();
   const T=mine?tables[mine.tid]:null;
-  const key=JSON.stringify(mine?[T?Object.assign({},T,{sel0:0,sel1:0}):T,animDone,invSt()]:[tables,canWrite,ready,!!db,!!uid,wallet.coins,wallet.ok,wallet.err]);
+  const key=JSON.stringify(mine?[T?Object.assign({},T,{sel0:0,sel1:0}):T,animDone,invSt()]:[tables,canWrite,ready,!!db,!!uid,wallet.coins,wallet.ok,wallet.err,wallet.blocked,wallet.frozen,ADMIN]);
   if(key===lastKey){paintOppSel();return;}lastKey=key;
   $('#top').style.display=mine?'none':'block';applyTab();
   const v=$('#view');
@@ -2419,6 +2478,7 @@ function paintHist(){
   const el=$('#whist');if(!el)return;
   if(!hist.length){el.innerHTML='<p class="hint">Nenhuma aposta ou doação ainda.</p>';return;}
   el.innerHTML=hist.map(h=>{
+    if(h.type==='admin'){const a=h.amt||0;return `<div class="hrow"><div><b>Ajuste do administrador</b><small>${fmtT(h.ts)}</small></div><span class="${a>=0?'pos':'neg'}">${a>=0?'+':'−'}${Math.abs(a)} 🪙</span></div>`;}
     let pre,nm,dev='',cl='',val;
     if(h.type==='gift_out'){pre='Doou para ';nm=h.other;val='−'+h.amt;cl='neg';}
     else if(h.type==='gift_in'){pre='Recebeu de ';nm=h.other;val='+'+h.amt;cl='pos';}
@@ -2493,7 +2553,7 @@ async function openProfile(dev,name,push){
     const uname=(us&&!us.empty)?(us.docs[0].data().name||''):'';
     if(profCur)profCur.fname=uname;
     /* perfil do administrador: quem vê (menos ele mesmo) sempre enxerga o saldo inicial, nunca o infinito */
-    const tAdm=!!uname&&ADMIN_USERS.some(a=>userKey(a)===userKey(uname));   /* só o nome de usuário da lista ADMIN_USERS conta */
+    const tAdm=w.adm===true;   /* a carteira do administrador é marcada pelo próprio app quando ele entra */
     const shownCoins=(tAdm&&!isAdmin())?START_COINS:(w.coins||0);
     const all=hs.docs.map(d=>d.data());
     const games=all.filter(h=>h.type==='game');
@@ -2657,6 +2717,7 @@ async function createPrivate(){
   if(creating||mine||busy)return;
   const m=t=>gmsg(t,false,'pmsg');
   if(!wallet.ok){m('Sua carteira ainda não carregou. Aguarde um instante.');return;}
+  if(lockd()){m(lockMsg());return;}
   if(!USER){askUser('');return;}
   const bet=Math.floor(parseInt($('#pbet').value,10)||0),to=($('#pto').value||'').trim().replace(/^@/,'');
   if(bet<MIN_BET){m('A aposta mínima é '+MIN_BET+'.');return;}
@@ -2773,7 +2834,7 @@ const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
 
 /* ---- online: online/<aparelho> = {name, ts}; renovado a cada 30 s ---- */
 function pingOnline(off){
-  if(!fs||!DEV||!USER)return;
+  if(!fs||!DEV||!USER||wallet.gone)return;
   const d={dev:DEV,name:USER,ts:Date.now()};if(off)d.off=true;
   fs.doc('online/'+DEV).set(d).catch(()=>{});
 }
@@ -3049,6 +3110,7 @@ async function sendCoins(){
   if(mine){m('Saia da mesa para poder enviar moedas.');return;}
   if(!isFriendDev(to.dev)){m('Só é possível enviar moedas para amigos.');return;}
   if(amt<1){m('Digite uma quantidade de moedas.');return;}
+  if(lockd()){m(lockMsg());return;}
   if(amt>wallet.coins&&!isAdmin()){m('Você só tem 🪙'+wallet.coins+'.');return;}
   sendingCoins=true;paintSend();m('Enviando...',true);
   try{
@@ -3056,6 +3118,8 @@ async function sendCoins(){
       const sref=fs.doc('wallets/'+DEV),rref=fs.doc('wallets/'+to.dev);
       const [ssn,rsn]=await Promise.all([tx.get(sref),tx.get(rref)]);
       if(!ssn.exists||!rsn.exists)return {err:'Carteira não encontrada.'};
+      if(!isAdmin()&&(ssn.data().blocked||ssn.data().frozen))return {err:'Seu saldo está bloqueado pelo administrador.'};
+      if(!isAdmin()&&(rsn.data().blocked||rsn.data().frozen))return {err:'Este jogador não pode receber moedas agora.'};
       const sc=ssn.data().coins||0;
       if(sc<amt&&!isAdmin())return {err:'Você não tem moedas suficientes.'};
       const now=Date.now(),left=isAdmin()?sc:sc-amt;
@@ -3104,14 +3168,16 @@ $('#gpick').addEventListener('click',e=>{
 $('#gpick .fps').addEventListener('input',paintGift);
 
 /* ---- menu lateral (lista de opções) e janelas ---- */
-const WINS=['w_acc','w_fr','w_add','w_req','w_out'];
+const WINS=['w_acc','w_fr','w_add','w_req','w_out','w_adm'];
 function closeWins(){WINS.forEach(i=>$('#'+i).classList.remove('on'));}
 function openWin(id){
   try{Snd.init();Snd.sfx('click');}catch(e){}
   if(id==='w_out'&&mine){closeDrawer();toast('Saia da mesa antes de sair da conta.');return;}
+  if(id==='w_adm'&&!isAdmin()){closeDrawer();return;}
   if(id!=='w_out'&&!USER){closeDrawer();askUser('');return;}
   closeDrawer();closeWins();
-  if(id==='w_acc'){paintProfile();gmsg('',true,'pf_nmsg');gmsg('',true,'pf_pmsg');}
+  if(id==='w_adm')admOpenList();
+  if(id==='w_acc'){$('#pf_uid').value=uid||'';paintProfile();gmsg('',true,'pf_nmsg');gmsg('',true,'pf_pmsg');}
   if(id==='w_add')gmsg('',true,'frmsg');
   if(id==='w_out'){
     $('#lo_txt').innerHTML=hasPw()?'Sair desta conta neste aparelho? Você poderá entrar de novo com usuário e senha.':'<b>Esta conta não tem senha.</b> Se sair, você perde o acesso às suas moedas e ao histórico. Crie uma senha antes, em Configurações da conta.';
@@ -3152,6 +3218,217 @@ document.addEventListener('keydown',e=>{
   else if($('#drawer').classList.contains('on'))closeDrawer();
 });
 
+
+/* ---------- administrador: identificado pelo UID no banco (admins/<UID>) ---------- */
+async function checkAdmin(){
+  let ok=false;
+  try{if(fs&&uid){const d=await fs.doc('admins/'+uid).get();ok=d.exists;}}catch(e){ok=false;}
+  ADMIN=ok;
+  const n=$('#admnav');if(n)n.style.display=ok?'':'none';
+  try{paintCoins();paintWal();renderAll();paintLock();}catch(e){}
+}
+$('#pf_copyuid').onclick=async()=>{
+  const v=uid||'';
+  try{await navigator.clipboard.writeText(v);toast('ID copiado.',true);}
+  catch(e){const i=$('#pf_uid');i.focus();i.select();try{document.execCommand('copy');toast('ID copiado.',true);}catch(x){toast('Segure o texto para copiar.');}}
+};
+
+/* tela de aviso: conta bloqueada ou removida (o administrador nunca vê isto) */
+function paintLock(){
+  const bx=$('#lockbox');if(!bx)return;
+  if(isAdmin()||(!wallet.blocked&&!wallet.gone)){bx.classList.remove('on');return;}
+  const b=$('#lock_b');
+  if(wallet.gone){
+    $('#lock_t').textContent='Conta removida';
+    $('#lock_m').textContent='Esta conta foi removida pelo administrador.';
+    b.textContent='Recomeçar';b.style.display='block';
+    b.onclick=async()=>{
+      try{await firebase.auth().signOut();}catch(e){}
+      ['vom_dev','vom_user','vom_nick'].forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+      try{document.cookie='vom_dev=;max-age=0;path=/;SameSite=Lax';}catch(e){}
+      location.reload();
+    };
+  }else{
+    $('#lock_t').textContent='Conta bloqueada';
+    $('#lock_m').textContent='O administrador bloqueou esta conta.'+(wallet.blockMsg?' Motivo: '+wallet.blockMsg:'');
+    b.style.display='none';
+  }
+  bx.classList.add('on');
+}
+
+/* ---------- gerenciamento de contas (só administrador) ---------- */
+let admRows=[],admCur=null,admConf=false,admWork=false;
+const admOnline=r=>!!(r.on&&!r.on.off&&Date.now()-(r.on.ts||0)<75000);
+const admShort=x=>x?(x.length>14?x.slice(0,6)+'…'+x.slice(-5):x):'—';
+function admView(v){$('#adm_listv').style.display=v==='list'?'block':'none';$('#adm_detv').style.display=v==='det'?'block':'none';}
+async function admOpenList(){admCur=null;admConf=false;admView('list');$('#adm_q').value='';await admLoad();}
+async function admLoad(){
+  if(!isAdmin())return;
+  const box=$('#adm_list');box.innerHTML='<p class="hint">Carregando contas...</p>';
+  try{
+    const [us,ws,on]=await Promise.all([fs.collection('usernames').get(),fs.collection('wallets').get(),fs.collection('online').get().catch(()=>null)]);
+    const wm={},om={},seen={},rows=[];
+    ws.forEach(d=>{wm[d.id]=d.data();});
+    if(on)on.forEach(d=>{om[d.id]=d.data();});
+    us.forEach(d=>{const u=d.data(),dev=u.dev;if(!dev||seen[dev])return;seen[dev]=1;rows.push({key:d.id,dev,name:u.name||d.id,w:wm[dev]||null,on:om[dev]||null});});
+    Object.keys(wm).forEach(dev=>{if(!seen[dev])rows.push({key:'',dev,name:'',w:wm[dev],on:om[dev]||null});});
+    rows.sort((a,b)=>(admOnline(b)-admOnline(a))||userKey(a.name||'~').localeCompare(userKey(b.name||'~')));
+    admRows=rows;admPaintList();
+  }catch(e){box.innerHTML='<div class="warn">Não foi possível carregar as contas. Confira as regras do Firestore.<br><small>'+esc((e&&e.message)||e)+'</small></div>';}
+}
+function admTags(r){
+  const w=r.w||{};
+  return (w.adm?'<span class="atag ad">admin</span>':'')+(w.blocked?'<span class="atag bl">bloqueada</span>':'')+(w.frozen?'<span class="atag fz">saldo travado</span>':'');
+}
+function admPaintList(){
+  const q=userKey($('#adm_q').value),box=$('#adm_list');
+  const fl=admRows.filter(r=>!q||userKey(r.name).includes(q));
+  const on=admRows.filter(admOnline).length;
+  $('#adm_sum').textContent=admRows.length+' conta'+(admRows.length===1?'':'s')+' · '+on+' online';
+  box.innerHTML=fl.map(r=>{
+    const w=r.w||{};
+    return `<button type="button" class="arow" data-dev="${esc(r.dev)}"><i class="odot${admOnline(r)?' on':''}"></i><span class="an"><b>${r.name?esc(r.name):'(sem nome)'}${admTags(r)}</b><small>${r.w?'visto '+(ago(w.seen)||'—'):'sem carteira'}</small></span><span class="ac">🪙 ${r.w?fmtC(w.coins||0):'—'}</span></button>`;
+  }).join('')||'<div class="fempty">Nenhuma conta encontrada.</div>';
+}
+$('#adm_q').oninput=admPaintList;
+$('#adm_reload').onclick=admLoad;
+$('#adm_list').addEventListener('click',e=>{const b=e.target.closest('.arow');if(b)admOpen(b.dataset.dev);});
+
+async function admOpen(dev){
+  const r=admRows.find(x=>x.dev===dev);if(!r)return;
+  admCur=r;admConf=false;admView('det');
+  $('#adm_detv').innerHTML='<p class="hint">Carregando conta...</p>';
+  try{
+    const [ws,hs,ac]=await Promise.all([
+      fs.doc('wallets/'+dev).get(),
+      fs.collection('wallets/'+dev+'/history').orderBy('ts','desc').limit(8).get().catch(()=>null),
+      (r.w&&r.w.uid)?fs.doc('accounts/'+r.w.uid).get().catch(()=>null):Promise.resolve(null)
+    ]);
+    r.w=ws.exists?ws.data():null;
+    r.hist=hs?hs.docs.map(d=>d.data()):[];
+    r.hasPw=!!(ac&&ac.exists);
+  }catch(e){}
+  if(admCur===r)admPaintDet();
+}
+function admMsg(t,ok){const e=$('#adm_msg');if(e){e.textContent=t||'';e.className='gmsg'+(ok?' ok':'');}}
+function admPaintDet(){
+  const r=admCur;if(!r)return;
+  const w=r.w||{},self=r.dev===DEV;
+  const hist=(r.hist||[]).map(h=>{
+    let t,v='',c='';
+    if(h.type==='admin'){t='Ajuste do administrador';v=((h.amt||0)>=0?'+':'−')+Math.abs(h.amt||0);c=(h.amt||0)>=0?'pos':'neg';}
+    else if(h.type==='gift_out'){t='Doou para '+(h.other||'?');v='−'+h.amt;c='neg';}
+    else if(h.type==='gift_in'){t='Recebeu de '+(h.other||'?');v='+'+h.amt;c='pos';}
+    else if(h.res==='win'){t='Vitória contra '+(h.opp||'?');v='+'+h.bet;c='pos';}
+    else if(h.res==='loss'){t='Derrota contra '+(h.opp||'?');v='−'+h.bet;c='neg';}
+    else{t='Empate com '+(h.opp||'?');v='0';}
+    return `<div class="hrow"><div><b>${esc(t)}</b><small>${fmtT(h.ts)}</small></div><span class="${c}">${v} 🪙</span></div>`;
+  }).join('')||'<p class="hint">Sem movimentações.</p>';
+  let h=`<button class="adm-back" id="adm_back">‹ Todas as contas</button>
+  <div class="dsec"><h4>${r.name?'@'+esc(r.name):'Conta sem nome'}${admTags(r)}</h4>
+    <div class="adm-kv">
+      <span>Saldo</span><b>🪙 ${r.w?fmtC(w.coins||0):'—'}</b>
+      <span>Situação</span><b>${admOnline(r)?'Online':'Offline'}</b>
+      <span>Criada em</span><b>${fmtD(w.created)}</b>
+      <span>Visto por último</span><b>${w.seen?ago(w.seen):'—'}</b>
+      <span>Senha</span><b>${r.hasPw?'Protegida':'Sem senha'}</b>
+      <span>UID</span><b>${esc(admShort(w.uid))}</b>
+      <span>Aparelho</span><b>${esc(admShort(r.dev))}</b>
+    </div></div>`;
+  if(!r.w){
+    h+=`<div class="warn">Esta conta não tem carteira. Só é possível removê-la.</div>`;
+  }
+  if(self){
+    h+=`<p class="hint">Esta é a sua conta de administrador. Ela não pode ser bloqueada nem removida por aqui.</p>`;
+  }else if(r.w){
+    h+=`<div class="dsec"><h4>Saldo</h4>
+      <input type="number" id="adm_amt" inputmode="numeric" min="0" placeholder="quantidade de moedas">
+      <div class="adm-row3"><button class="btn" data-aa="set">Definir</button><button class="btn ghost" data-aa="add">Adicionar</button><button class="btn ghost" data-aa="sub">Remover</button></div>
+    </div>
+    <div class="dsec"><h4>Restrições</h4>
+      <button class="btn ghost" data-aa="frz">${w.frozen?'Liberar saldo':'Bloquear saldo'}</button>
+      <p class="hint" style="text-align:left">Com o saldo bloqueado, ${r.name?'@'+esc(r.name):'a pessoa'} não aposta, não envia nem recebe moedas.</p>
+      <input type="text" id="adm_reason" maxlength="80" placeholder="Motivo do bloqueio (opcional)" value="${esc(w.blockMsg||'')}">
+      <button class="btn ${w.blocked?'ghost':'morte'}" data-aa="blk">${w.blocked?'Desbloquear conta':'Bloquear conta'}</button>
+    </div>`;
+  }
+  h+=`<div class="gmsg" id="adm_msg"></div>`;
+  h+=`<div class="dsec"><h4>Últimas movimentações</h4>${hist}</div>`;
+  if(!self){
+    h+=admConf
+      ?`<div class="warn">Remover apaga o usuário, o saldo e o histórico${r.name?' de @'+esc(r.name):''}. Não dá para desfazer.</div><div class="row2"><button class="btn ghost" data-aa="rmno">Cancelar</button><button class="btn morte" data-aa="rmyes">Sim, remover</button></div>`
+      :`<button class="btn morte" data-aa="rm">Remover conta</button>`;
+  }
+  $('#adm_detv').innerHTML=h;
+}
+$('#adm_detv').addEventListener('click',e=>{
+  if(e.target.closest('#adm_back')){admCur=null;admConf=false;admView('list');admPaintList();return;}
+  const b=e.target.closest('[data-aa]');if(!b||admWork)return;
+  const a=b.dataset.aa;
+  if(a==='rm'){admConf=true;admPaintDet();return;}
+  if(a==='rmno'){admConf=false;admPaintDet();return;}
+  admAct(a);
+});
+async function admAct(a){
+  const r=admCur;if(!r||!isAdmin()||r.dev===DEV)return;
+  const dev=r.dev,ref=fs.doc('wallets/'+dev);
+  admWork=true;admMsg('Salvando...',true);
+  try{
+    if(a==='set'||a==='add'||a==='sub'){
+      const raw=($('#adm_amt').value||'').replace(/\D/g,''),amt=parseInt(raw,10);
+      if(!(amt>=0)||raw===''){admMsg('Digite uma quantidade de moedas.');return;}
+      if(amt>=ADMIN_COINS){admMsg('Quantidade grande demais.');return;}
+      await fs.runTransaction(async tx=>{
+        const sn=await tx.get(ref);if(!sn.exists)throw new Error('Carteira não encontrada.');
+        const cur=sn.data().coins||0,now=Date.now();
+        const nv=a==='set'?amt:(a==='add'?cur+amt:Math.max(0,cur-amt));
+        tx.update(ref,{coins:nv,ts:now,zeroAt:nv<=0?now:null});
+        tx.set(fs.collection('wallets/'+dev+'/history').doc(),{type:'admin',amt:nv-cur,ts:now});
+      });
+      await admReload(dev);admMsg('Saldo atualizado.',true);
+    }else if(a==='frz'){
+      const cur=!!(r.w&&r.w.frozen);
+      await ref.update({frozen:!cur});
+      await admReload(dev);admMsg(cur?'Saldo liberado.':'Saldo bloqueado.',true);
+    }else if(a==='blk'){
+      const cur=!!(r.w&&r.w.blocked),why=(($('#adm_reason')||{}).value||'').trim().slice(0,80);
+      await ref.update(cur?{blocked:false,blockMsg:''}:{blocked:true,blockMsg:why});
+      await admReload(dev);admMsg(cur?'Conta desbloqueada.':'Conta bloqueada.',true);
+    }else if(a==='rmyes'){
+      await admRemove(r);
+      admRows=admRows.filter(x=>x.dev!==dev);admCur=null;admConf=false;admView('list');admPaintList();
+      toast('Conta removida.',true);
+    }
+  }catch(e){admMsg('Não foi possível concluir: '+((e&&e.message)||e));}
+  finally{admWork=false;}
+}
+async function admReload(dev){
+  const r=admRows.find(x=>x.dev===dev);if(!r)return;
+  const sn=await fs.doc('wallets/'+dev).get();r.w=sn.exists?sn.data():null;
+  const hs=await fs.collection('wallets/'+dev+'/history').orderBy('ts','desc').limit(8).get().catch(()=>null);
+  r.hist=hs?hs.docs.map(d=>d.data()):r.hist;
+  if(admCur===r)admPaintDet();
+}
+/* apaga usuário, carteira, histórico, presença e pedidos de amizade (a entrada de login do Firebase Authentication só se apaga pelo Console) */
+async function admRemove(r){
+  const dev=r.dev,wuid=r.w&&r.w.uid;
+  let batch=fs.batch(),n=0;
+  const add=ref=>{batch.delete(ref);n++;};
+  const flush=async()=>{if(n){await batch.commit();batch=fs.batch();n=0;}};
+  const hs=await fs.collection('wallets/'+dev+'/history').get();
+  for(const d of hs.docs){add(d.ref);if(n>=400)await flush();}
+  const [a,b]=await Promise.all([
+    fs.collection('friendreqs').where('fromDev','==',dev).get().catch(()=>null),
+    fs.collection('friendreqs').where('toDev','==',dev).get().catch(()=>null)
+  ]);
+  [a,b].forEach(q=>{if(q)q.docs.forEach(d=>add(d.ref));});
+  add(fs.doc('online/'+dev));add(fs.doc('presence/'+dev));
+  if(r.key)add(fs.doc('usernames/'+r.key));
+  if(wuid)add(fs.doc('accounts/'+wuid));
+  await flush();
+  await fs.doc('wallets/'+dev).delete();   /* por último: é o que avisa o aparelho da pessoa */
+}
+
 /* ---------- início ---------- */
 async function boot(){
   try{$('#nick').value=localStorage.getItem('vom_nick')||'';}catch(e){}
@@ -3167,6 +3444,7 @@ async function boot(){
     uid=cu.uid;canWrite=true;db=fs;DEV=getDev();
     try{await initWallet();}catch(e){wallet.err=(e&&e.message)||String(e);}
     try{await initUser();}catch(e){}
+    await checkAdmin();
   }catch(e){initError=(e&&e.message)||String(e);}
   ready=true;
   if(db&&uid){
