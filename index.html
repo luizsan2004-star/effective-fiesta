@@ -422,9 +422,9 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
 .rlo{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
 .rlo button{border:1px solid #e8c35a66;background:#0007;color:var(--ink);border-radius:99px;padding:5px 11px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:var(--fb)}
 .rlo button.on{background:var(--gold);color:#2a1d00;border-color:var(--gold)}
-.slot.locked{outline:2px solid var(--gold);outline-offset:-2px;border-radius:6px}
-.slot.locked::after{content:'🔒';position:absolute;top:1px;right:1px;font-size:.7rem;line-height:1;pointer-events:none}
-.hand.pk .slot{cursor:pointer;outline:2px dashed #e8c35a;outline-offset:-2px;border-radius:6px}
+.slot.locked .card{box-shadow:0 0 0 3px #e5283a,0 0 16px #ff3b4acc}   /* carta revelada: borda vermelha com brilho que some */
+.hand.pk .slot{cursor:pointer}
+.hand.pk .slot .back{box-shadow:0 0 0 2px var(--gold),0 0 14px #e8c35acc}
 .acebtn{margin-left:8px;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--gold);background:#0007;color:var(--gold);cursor:pointer}
 </style>
 </head>
@@ -835,12 +835,24 @@ async function initWallet(){
   ref.onSnapshot(sn=>{if(sn.exists){const d=sn.data();wallet.coins=d.coins||0;wallet.zeroAt=d.zeroAt||0;}paintCoins();renderAll();},()=>{});
   claimGrant();
 }
+/* conta de administrador: moedas "infinitas" para testes e doações sem gastar saldo */
+const ADMIN_USERS=['Sanm'];   /* coloque aqui o seu nome de usuário (um ou mais) */
+const ADMIN_COINS=1000000000;
+const isAdmin=()=>!!USER&&ADMIN_USERS.some(a=>userKey(a)===userKey(USER));
+const fmtC=c=>c>=1e8?'∞':c;
+let topping=false;
+function adminTop(){
+  if(topping||!wallet.ok||!isAdmin()||wallet.coins>=ADMIN_COINS/2)return;
+  topping=true;
+  fs.doc('wallets/'+DEV).set({coins:ADMIN_COINS,ts:Date.now(),zeroAt:null},{merge:true}).catch(()=>{}).then(()=>{topping=false;});
+}
 function paintCoins(){
+  adminTop();
   const el=$('#coins');if(!el)return;
   el.style.display=(wallet.ok&&mine)?'inline-block':'none';
   const T=mine?tables[mine.tid]:null;
   const lk=(T&&T.status==='playing')?(T.stake||0):0;
-  let t='🪙 '+wallet.coins+(lk?' · '+lk+' na mesa':''),cd='';
+  let t='🪙 '+fmtC(wallet.coins)+(lk?' · '+lk+' na mesa':''),cd='';
   if(wallet.coins<=0&&!lk&&wallet.zeroAt){
     const left=Math.max(0,GRANT_WAIT-(Date.now()-wallet.zeroAt));
     cd='+'+GRANT_COINS+' em '+Math.floor(left/60000)+':'+String(Math.floor(left%60000/1000)).padStart(2,'0');
@@ -1364,7 +1376,7 @@ function lobbyHTML(){
       <div class="seats">${S.seats.map(x=>`<div class="seat${x.uid&&!x.left?' taken':''}">${x.uid&&!x.left?esc(x.name):'Vaga livre'}</div>`).join('')}</div>${btn}</div>`;
   }).join('');
   const broke=(wallet.ok&&wallet.coins<=0)?`<div class="warn">Você está sem moedas. Depois de 30 minutos zerado, o sistema dá <b>🪙${GRANT_COINS}</b> (uma vez).</div>`:'';
-  const bal=`<div class="panel wal"><span>Suas moedas<em class="wgo">Toque para abrir a carteira</em></span><div><b>🪙 ${wallet.ok?wallet.coins:'...'}</b><small id="walt"></small></div></div>`;
+  const bal=`<div class="panel wal"><span>Suas moedas<em class="wgo">Toque para abrir a carteira</em></span><div><b>🪙 ${wallet.ok?fmtC(wallet.coins):'...'}</b><small id="walt"></small></div></div>`;
   return bal+warn+broke+`<div class="lgrid">${cards}</div>`;
 }
 
@@ -2209,8 +2221,8 @@ function paintHist(){
 /* carteira (janela) */
 function paintWal(){
   const bx=$('#walbox');if(!bx)return;
-  $('#wbig').textContent='🪙 '+(wallet.ok?wallet.coins:'...');
-  $('#wuser').textContent=USER?('@'+USER):'';
+  $('#wbig').textContent='🪙 '+(wallet.ok?fmtC(wallet.coins):'...');
+  $('#wuser').textContent=USER?('@'+USER+(isAdmin()?' · admin':'')):'';
   const note=$('#gnote'),btn=$('#gsend');
   if(mine){note.textContent='Saia da mesa para poder doar moedas.';btn.disabled=true;}
   else{note.textContent='';btn.disabled=giving||!wallet.ok||!USER;}
@@ -2239,7 +2251,7 @@ async function donate(){
   if(!to){gmsg('Digite o nome de usuário de quem vai receber.');return;}
   if(userKey(to)===userKey(USER)){gmsg('Você não pode doar para você mesmo.');return;}
   if(amt<1){gmsg('Digite uma quantidade de moedas.');return;}
-  if(amt>wallet.coins){gmsg('Você só tem 🪙'+wallet.coins+'.');return;}
+  if(amt>wallet.coins&&!isAdmin()){gmsg('Você só tem 🪙'+wallet.coins+'.');return;}
   giving=true;paintWal();gmsg('Enviando...',true);
   try{
     const res=await fs.runTransaction(async tx=>{
@@ -2251,8 +2263,8 @@ async function donate(){
       const [ssn,rsn]=await Promise.all([tx.get(sref),tx.get(rref)]);
       if(!ssn.exists||!rsn.exists)return {err:'Carteira não encontrada.'};
       const sc=ssn.data().coins||0;
-      if(sc<amt)return {err:'Você não tem moedas suficientes.'};
-      const now=Date.now(),left=sc-amt;
+      if(sc<amt&&!isAdmin())return {err:'Você não tem moedas suficientes.'};
+      const now=Date.now(),left=isAdmin()?sc:sc-amt;   /* admin doa sem gastar saldo */
       tx.update(sref,{coins:left,ts:now,zeroAt:left<=0?now:null});
       tx.update(rref,{coins:(rsn.data().coins||0)+amt,ts:now,zeroAt:null});
       tx.set(fs.collection('wallets/'+DEV+'/history').doc(),{type:'gift_out',other:toName,amt,ts:now});
@@ -2268,7 +2280,7 @@ async function donate(){
 $('#wx').onclick=closeWallet;
 $('#walbox').addEventListener('pointerdown',e=>{if(e.target.id==='walbox')closeWallet();});
 document.querySelectorAll('#walbox [data-wt]').forEach(b=>{b.onclick=()=>wtabSet(b.dataset.wt);});
-document.querySelectorAll('#gchips button').forEach(b=>{b.onclick=()=>{$('#gamt').value=b.dataset.v==='all'?String(wallet.coins):b.dataset.v;};});
+document.querySelectorAll('#gchips button').forEach(b=>{b.onclick=()=>{$('#gamt').value=b.dataset.v==='all'?String(isAdmin()?10000:wallet.coins):b.dataset.v;};});
 $('#gamt').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'');});
 $('#gsend').onclick=donate;
 $('#usave').onclick=saveUser;
@@ -2309,11 +2321,11 @@ function floaters(on){
 /* embaralha e distribui o baralho no fundo da tela de transição */
 function shuffleScene(box,n){
   if(!box||!box.animate)return sleep(1800);
-  const w=Math.max(44,Math.min(72,innerWidth*.15)),total=Math.max(12,Math.min(22,n*2+2)),cs=[];
+  const w=Math.max(44,Math.min(72,innerWidth*.15)),total=Math.max(10,Math.min(16,n*2)),cs=[];
   box.style.cssText='position:relative;width:100%;height:38vh;height:38dvh;max-height:300px;margin-top:6px';
   for(let k=0;k<total;k++){
     const c=document.createElement('div');c.className='sbk';
-    c.style.cssText=`position:absolute;left:50%;top:50%;width:${w}px;aspect-ratio:5/7;margin:${-w*.7}px 0 0 ${-w/2}px;container-type:inline-size;z-index:${k};filter:drop-shadow(0 3px 5px #0009)`;
+    c.style.cssText=`position:absolute;left:50%;top:50%;width:${w}px;aspect-ratio:5/7;margin:${-w*.7}px 0 0 ${-w/2}px;container-type:inline-size;z-index:${k};will-change:transform;filter:drop-shadow(0 3px 5px #0009)`;
     c.innerHTML='<div class="back"></div>';box.appendChild(c);cs.push(c);
   }
   const T=(x,y,r)=>`translate(${x}px,${y}px) rotate(${r}deg)`;
