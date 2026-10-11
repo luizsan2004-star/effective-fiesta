@@ -153,10 +153,11 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .rvdark{position:fixed;inset:0;z-index:90;pointer-events:auto;background:radial-gradient(ellipse at center,#000000c8 0%,#000000f2 80%)}
 .rvtxt{position:fixed;left:0;right:0;top:40%;z-index:95;text-align:center;pointer-events:none;font:700 1.3rem Georgia,serif;letter-spacing:.14em;color:#e8c35a;text-shadow:0 0 18px #e8c35a88}
 .rvflash{position:fixed;inset:0;z-index:98;pointer-events:none}
-.dbig{position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;gap:5vw;pointer-events:none}
+.dbig{position:fixed;inset:0;z-index:95;pointer-events:none}
+.dbig .dw2{position:absolute;left:50%;top:50%;margin:calc(min(62px,15vw)/-2) 0 0 calc(min(62px,15vw)/-2)}
 .dbig .die{width:min(62px,15vw);height:min(62px,15vw);padding:min(8px,2vw);gap:1px;border-radius:min(12px,3vw);box-shadow:0 4px 0 #bbb,0 10px 18px #000c}
 .dbig .die.q{font-size:2rem}
-.rvtxt.dsum{top:calc(50% + min(52px,12vw));font-size:1.4rem;line-height:1.25}
+.rvtxt.dsum{top:calc(50% + 9vh + min(46px,11vw));font-size:1.4rem;line-height:1.25}
 .rvtxt.dsum b{color:#fff}
 .fw.par{font-size:2.4rem}
 .cf{position:fixed;top:0;width:8px;height:14px;z-index:90;pointer-events:none;border-radius:2px}
@@ -1952,8 +1953,8 @@ async function animResult(S,i){
   const os=$('#oppsum');if(os)os.textContent='0';
   document.querySelectorAll('#opphand .slot').forEach(sl=>{const c=document.createElement('div');c.className='back';sl.appendChild(c);c.dataset.cv='1';});
   await sceneCard('','HORA DA VERDADE','Vamos revelar as cartas...',3500);
+  await suspenseReveal(S.choice);   /* as cartas continuam viradas durante o suspense */
   document.querySelectorAll('#opphand .slot .back[data-cv]').forEach(c=>c.remove());
-  await suspenseReveal(S.choice);
   const t=300,gap=300;
   document.querySelectorAll('#opphand .slot').forEach((sl,x)=>{flipIn(sl,600,t+x*gap);setTimeout(()=>Snd.sfx('flip'),t+x*gap+300);});
   countUp(os,seatSum(S,1-i),t+5*gap+300,800);
@@ -1987,20 +1988,30 @@ async function runDice(S){
     /* tela escura + dados grandes no meio */
     const o=document.createElement('div');o.className='rvdark';
     const box=document.createElement('div');box.className='dbig';
-    box.innerHTML='<div class="dw2">'+dieHTML(rnd6(),true)+'</div><div class="dw2">'+dieHTML(rnd6(),true)+'</div>';
+    box.innerHTML='<div class="dw2">'+dieHTML(S.dice[0])+'</div><div class="dw2">'+dieHTML(S.dice[1])+'</div>';
     const bt=document.createElement('div');bt.className='rvtxt dsum';bt.style.opacity='0';
     document.body.appendChild(o);document.body.appendChild(box);document.body.appendChild(bt);
     const bw=[...box.children];
     if(o.animate)o.animate([{opacity:0},{opacity:1}],{duration:600,fill:'both'});
-    await sleep(350);
     Snd.sfx('dice');
-    bw.forEach((w,k)=>w.animate([{transform:`translate(${k?-38:38}vw,-60vh) rotate(${k?-540:540}deg) scale(.8)`,opacity:1},{transform:'translate(0,0) rotate(0deg) scale(1)',opacity:1}],{duration:1300,easing:'cubic-bezier(.3,.6,.35,1)',fill:'backwards'}));
-    for(const dl of [60,60,60,65,70,80,95,115,140,170,210,260,320,400,500,620]){
-      if(!bw[0]||!bw[0].isConnected)break;
-      bw.forEach(w=>{w.innerHTML=dieHTML(rnd6(),true);});
-      await sleep(dl);
-    }
-    bw.forEach((w,k)=>{w.innerHTML=dieHTML(S.dice[k]);w.animate([{transform:'scale(1.3) rotate(-6deg)'},{transform:'scale(.94)',offset:.55},{transform:'scale(1)'}],{duration:380,easing:'ease-out'});});
+    const RD=1400,W=innerWidth,H=innerHeight,U=Math.min(W,560)/100,R=(a,b)=>a+Math.random()*(b-a),sg=()=>Math.random()<.5?-1:1;
+    /* de onde cada dado entra: qualquer lado ou canto da tela (aleatório) */
+    const entry=()=>{
+      const sd=Math.floor(Math.random()*4),far=1.0;
+      if(sd===0)return [R(-.5,.5)*W,-H*far];          /* cima */
+      if(sd===1)return [R(-.5,.5)*W,H*far];           /* baixo */
+      if(sd===2)return [-W*far,R(-.5,.5)*H];          /* esquerda */
+      return [W*far,R(-.5,.5)*H];                      /* direita */
+    };
+    /* onde cada dado cai: posições diferentes a cada rolagem, sem se sobrepor */
+    const s0=sg(),land=[[s0*R(7,20)*U,R(-.14,.08)*H],[-s0*R(7,20)*U,R(-.14,.08)*H]];
+    bw.forEach((w,k)=>{
+      const [sx,sy]=entry(),spin=sg()*R(540,900),tilt=R(-25,25);
+      w.animate([{transform:`translate(${sx}px,${sy}px) rotate(${spin}deg) scale(.8)`},{transform:`translate(${land[k][0]}px,${land[k][1]}px) rotate(${tilt}deg) scale(1)`}],{duration:RD,easing:'cubic-bezier(.3,.6,.35,1.08)',fill:'both'});
+      w._to=`translate(${land[k][0]}px,${land[k][1]}px) rotate(${tilt}deg)`;
+    });
+    await sleep(RD);
+    bw.forEach(w=>{w.animate([{transform:w._to+' scale(1.15)'},{transform:w._to+' scale(.95)',offset:.55},{transform:w._to+' scale(1)'}],{duration:300,easing:'ease-out'});});
     Snd.sfx('diceLand');
     bt.innerHTML=`<div style="font-size:.95rem;opacity:.85;letter-spacing:.08em">Soma ${tot}</div><b style="font-size:2.4rem;letter-spacing:.12em">${lbl}</b>`;bt.style.opacity='1';
     if(bt.animate)bt.animate([{transform:'scale(.6)',opacity:0},{transform:'scale(1.1)',opacity:1,offset:.6},{transform:'scale(1)',opacity:1}],{duration:420,easing:'ease-out'});
