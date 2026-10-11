@@ -468,6 +468,10 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
 .stack.drop{border:1px solid var(--gold);box-shadow:var(--glowG);animation:dropp .8s ease-in-out infinite alternate}
 @keyframes dropp{from{transform:scale(1)}to{transform:scale(1.08)}}
 .upbr{flex-basis:100%;height:0}
+.scene.turn .sc1{font-size:clamp(2.6rem,13vw,3.9rem);letter-spacing:.14em}
+.scene.turn .sci{font-size:1rem;min-height:2.4rem;display:flex;align-items:center}
+.tdots i{display:inline-block;width:18px;height:18px;border-radius:50%;margin:0 8px;border:2px solid var(--gold);opacity:.55}
+.tdots i.on{background:var(--gold);opacity:1;box-shadow:0 0 14px var(--gold)}
 .admbets{background:#0005;border:1px solid #ffffff22;border-radius:12px;padding:10px;margin:8px 0 12px}
 .admbets h4{margin:0 0 8px;font-family:Georgia,serif;color:var(--gold)}
 .abg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -1282,6 +1286,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const rnd6=()=>1+Math.floor(Math.random()*6);
 const TABLE_IDS=['mesa1','mesa2','mesa3','mesa4'];
 const ROLL_MS=12800;          /* tela "escolheu PAR" + dados + tela "VIDA OU MORTE" (entra no prazo de Vida/Morte) */
+const TURN_LEAD=6500,TURN1_LEAD=3500;   /* tempo extra no relógio do turno para a tela "TURNO n" (e as cartas voando) não comerem o tempo de quem joga */
 const PARITY_LEAD=5600;      /* tela "PAR OU ÍMPAR" antes de começar a contar os 15s */
 const CHOICE_MS=15000;       /* tempo para Par/Ímpar e Vida/Morte */
 const BASE_BET={mesa1:50,mesa2:100,mesa3:150,mesa4:200};   /* aposta inicial de cada mesa (por jogador) */
@@ -1332,7 +1337,7 @@ function startTurnS(S){
     if(S.turn>3){S.phase='parity';S.prop=null;S.picker=Math.random()<0.5?0:1;S.deadline=Date.now()+PARITY_LEAD+CHOICE_MS;S.seats.forEach(p=>{p.acted=false;});return;}
     S.seats.forEach(p=>{p.tt=0;if(!p.done&&p.traded>=getRules(S).maxT)p.done=true;p.acted=p.done;});
     if(S.seats.every(p=>p.done)){S.turn++;continue;}
-    S.phase='trade';S.deadline=Date.now()+getRules(S).tms*1000;return;
+    S.phase='trade';S.deadline=Date.now()+(S.turn===1?TURN1_LEAD:TURN_LEAD)+getRules(S).tms*1000;return;
   }
 }
 function nextTurnS(S){S.turn++;startTurnS(S);}
@@ -2203,6 +2208,13 @@ async function sceneCard(icon,title,sub,ms,cls,delay){
     a.onfinish=done;a.oncancel=done;
   });
 }
+/* tela de apresentação de cada turno (como a de Par ou Ímpar): TURNO 1, TURNO 2, TURNO 3 */
+const TURN_MS=3000;
+function turnScene(n,delay){
+  const dots=[1,2,3].map(k=>`<i class="${k<=n?'on':''}"></i>`).join('');
+  const sub=n>=3?'<b>Última chance</b> de trocar cartas.<br>Os dois jogam ao mesmo tempo.':'Faça suas trocas (até 2 por turno).<br>Os dois jogam ao mesmo tempo.';
+  return sceneCard(`<span class="tdots">${dots}</span>`,'TURNO '+n,sub,TURN_MS,'turn',delay);
+}
 function flashWord(t,cls){
   const d=document.createElement('div');d.className='fw '+(cls||'');d.textContent=t;document.body.appendChild(d);
   if(!d.animate){setTimeout(()=>d.remove(),900);return Promise.resolve();}
@@ -2443,14 +2455,14 @@ function transition(p,S,i,before){
   if(!holdDeal&&S.status==='playing'&&fresh&&S.turn===1&&S.phase==='trade'&&S.seats.every(s=>!s.acted&&!s.traded)){
     let base=0;
     if(p&&p.status==='finished'&&prevDisc>0){const sw=animDiscToDeck(prevDisc,p.disc);base=sw.ms;tasks.push(sw.done);}   /* descarte volta ao monte */
-    Snd.sfx('start');tasks.push(animDeal(base));
+    Snd.sfx('start');tasks.push(animDeal(base).then(()=>turnScene(1,250)));   /* depois que as cartas pousam: TURNO 1 */
   }else if(p&&p.status==='playing'&&S.status==='playing'){
     for(const k of [i,1-i]){
       const a=p.seats[k],b=S.seats[k];
       if(b.traded>a.traded&&b.lastNew&&b.lastNew.length)tasks.push(animTrade(k===i,a,b,before,S));
       else if(k!==i&&b.acted&&!a.acted)Snd.sfx('blip');
     }
-    if(S.turn>p.turn&&S.phase==='trade'){flashWord('TURNO '+S.turn,'turn');Snd.sfx('turn');}
+    if(S.turn>p.turn&&S.phase==='trade'){const prior=Promise.all(tasks.slice());tasks.push(prior.then(()=>turnScene(S.turn,300)));}   /* depois das trocas voarem: TURNO 2 / TURNO 3 */
     if(S.phase==='parity'&&p.phase==='trade'){
       const pk=pickerOf(S);
       sceneCard('','PAR OU ÍMPAR',pk===i?'<b>Você</b> foi sorteado<br>para escolher.':`<b>${esc(S.seats[pk].name)}</b> foi sorteado<br>para escolher.`,4200,'',tasks.length?1100:300).then(()=>{holdParity=0;lastKey='';renderAll();});
@@ -2459,7 +2471,7 @@ function transition(p,S,i,before){
   if(p&&p.status==='playing'&&S.status==='finished')tasks.push(animResult(S,i));
   if(p&&p.status==='playing'&&S.status==='abandoned'){Snd.sfx('win');Snd.duck(2500);}
   setDisc(discShown);
-  if(tasks.length)lock(Promise.all(tasks),(p&&p.status==='playing'&&S.status==='finished')?24000:8000);
+  if(tasks.length)lock(Promise.all(tasks),(p&&p.status==='playing'&&S.status==='finished')?24000:14000);
 }
 const musicFor=S=>(S&&S.status==='playing')?((S.phase==='parity'||S.phase==='choose')?'tense':'game'):'calm';
 
@@ -3393,9 +3405,10 @@ function bridgeIn(S,i){
       const fade=d.animate?d.animate([{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-48px)'}],{duration:900,easing:'ease-in',fill:'forwards'}):null;
       if(fade)fade.finished.catch(()=>{}).then(()=>d.remove());
       await dealToHands(src);
+      await turnScene(1,250);   /* TURNO 1 */
     }catch(e){console.error(e);}
     finally{clearTimeout(kill);end();}
-  })(),17000);
+  })(),24000);
 }
 
 /* convites */
