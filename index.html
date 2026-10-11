@@ -1764,8 +1764,9 @@ function bindGame(S,i){
   const bc=$('#bchg');if(bc)bc.onclick=()=>{betMode='dlg';betKey='';paintBet();};
   const bx=$('#bcancel');if(bx)bx.onclick=()=>cancelBet(i);
   if(S.status!=='playing')return;
-  if(S.phase==='trade'&&!S.seats[i].acted&&!S.seats[i].done)bindTrade(S,i);
-  if(S.phase==='trade'&&getRules(S).reveal==='pick'&&rvOf(S)[1-i]<0)document.querySelectorAll('#opphand .slot').forEach((el,x)=>{el.onclick=()=>{Snd.sfx('select');pickReveal(i,x);};});
+  const pendPick=getRules(S).reveal==='pick'&&S.turn===1&&(rvOf(S)[0]<0||rvOf(S)[1]<0);   /* ainda escolhendo a carta revelada: sem botões de troca */
+  if(S.phase==='trade'&&!S.seats[i].acted&&!S.seats[i].done&&!pendPick)bindTrade(S,i);
+  if(S.phase==='trade'&&pendPick&&rvOf(S)[1-i]<0)document.querySelectorAll('#opphand .slot').forEach((el,x)=>{el.onclick=()=>{Snd.sfx('select');pickReveal(i,x);};});
   if($('#ace'))$('#ace').onclick=()=>{Snd.sfx('select');commit(X=>{if(X.status!=='playing'||!(X.phase==='trade'||X.phase==='parity'))return false;const q=X.seats[mine.seat];q.ace=q.ace===11?1:11;});};
   if(S.phase==='parity'&&pickerOf(S)===i&&$('#par')){$('#par').onclick=()=>pickParity(i,'par');$('#imp').onclick=()=>pickParity(i,'impar');}
   if(S.phase==='choose'&&S.win===i&&$('#v')){$('#v').onclick=()=>pickChoice('vida');$('#m').onclick=()=>pickChoice('morte');}
@@ -1799,7 +1800,7 @@ function renderAll(force){
   const p=(prev&&prev.id===S.id)?prev:null;
   prev=S;
   transition(p,S,i,before);
-  floaters(S.status==='open'||S.status==='starting');
+  floaters(S.status==='open');   /* cartas flutuando só na tela de espera */
   Snd.mode(musicFor(S));
 }
 
@@ -2339,7 +2340,7 @@ function bridgeIn(S,i){
   lock((async()=>{
     const d=document.createElement('div');d.className='scene';
     d.innerHTML=`<div class="sci"></div><div class="sc1">BOA SORTE!</div><div class="sc2"><b>${esc(S.seats[i].name)}</b> × <b>${esc(S.seats[1-i].name)}</b><br>Embaralhando as cartas...</div><div class="shuf"></div>`;
-    document.body.appendChild(d);Snd.sfx('start');
+    document.body.appendChild(d);Snd.sfx('start');floaters(false);
     const kill=setTimeout(()=>d.remove(),11000);   /* segurança: a tela nunca fica presa */
     try{
       if(d.animate)d.animate([{opacity:0},{opacity:1}],{duration:450,fill:'forwards'});
