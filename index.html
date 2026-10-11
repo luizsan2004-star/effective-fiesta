@@ -138,7 +138,7 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .stack{position:relative;width:46px;aspect-ratio:5/7;container-type:inline-size;border:1px dashed #ffffff44;border-radius:6px}
 .dcard{position:absolute;inset:0}
 .mid{font-size:1.4rem;letter-spacing:.3em;opacity:.3}
-.ghost{position:fixed;z-index:60;pointer-events:none;margin:0}
+.flyc{position:fixed;z-index:60;pointer-events:none;margin:0}
 .gslot{position:absolute;inset:0;container-type:inline-size}
 .busy #hand{pointer-events:none}
 .fw{position:fixed;left:0;right:0;top:34%;text-align:center;font:900 3.4rem Georgia,serif;letter-spacing:.06em;pointer-events:none;z-index:100;color:var(--gold);text-shadow:0 3px 0 #000a,0 0 28px #e8c35aaa}
@@ -151,6 +151,11 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .dw{display:block}
 .dcap{text-align:center;font-size:1.25rem;min-height:2em}
 .dcap b{color:var(--gold)}
+.mid.dr{display:flex;gap:8px;opacity:1;letter-spacing:0;font-size:1rem}
+.felt .die{width:52px;height:52px;padding:7px;border-radius:10px;gap:1px;box-shadow:0 3px 0 #bbb,0 5px 8px #0008}
+.felt .die.q{font-size:1.5rem}
+.hand.mini5.rev .slot{max-width:56px}
+.panel.mini .sum{margin:6px 0 0}
 </style>
 </head>
 <body>
@@ -354,7 +359,7 @@ const CHOICE_MS=15000;       /* tempo para Par/Ímpar e Vida/Morte */
 
 const cardOf=n=>{const su=SUITS[Math.floor(n/13)%4],r=RANKS[n%13];return {r,s:su.s,red:su.red,v:val(r)};};
 const sumH=h=>h.reduce((a,n)=>a+cardOf(n).v,0);
-const handStatic=(h,nw,id)=>`<div class="hand"${id?` id="${id}"`:''}>${h.map((n,x)=>`<div class="slot static${nw&&nw.has(x)?' new':''}">${cardHTML(cardOf(n))}</div>`).join('')}</div>`;
+const handStatic=(h,nw,id,cls)=>`<div class="hand${cls?' '+cls:''}"${id?` id="${id}"`:''}>${h.map((n,x)=>`<div class="slot static${nw&&nw.has(x)?' new':''}">${cardHTML(cardOf(n))}</div>`).join('')}</div>`;
 const backs=()=>`<div class="hand mini5" id="opphand">${[0,1,2,3,4].map(()=>`<div class="slot static"><div class="back"></div></div>`).join('')}</div>`;
 const badge=p=>`<span class="badge ${p==='par'?'v':'m'}">${p==='par'?'PAR':'ÍMPAR'}</span>`;
 
@@ -580,67 +585,74 @@ function setDisc(n){
   const l=$('#disclab');if(l)l.textContent='Descarte · '+n;
 }
 const bump=()=>{const d=$('#disc');if(d&&d.animate)d.animate([{transform:'scale(1.14)'},{transform:'scale(1)'}],{duration:180});};
+const isRolling=S=>(S.phase==='choose'||S.phase==='result')&&S.rollAt&&animDone!==S.rollAt&&Date.now()-S.rollAt<=8000;
 function feltHTML(S){
   const tot=S.seats[0].traded+S.seats[1].traded;
+  const mid=((S.phase==='choose'||S.phase==='result')&&S.rollAt)
+    ?`<div class="mid dr" id="dice">${isRolling(S)?`<div class="dw">${dieHTML(0)}</div><div class="dw">${dieHTML(0)}</div>`:`<div class="dw">${dieHTML(S.dice[0])}</div><div class="dw">${dieHTML(S.dice[1])}</div>`}</div>`
+    :`<div class="mid">♠♥♦♣</div>`;
   return `<div class="felt"><div class="pilebox"><div class="stack" id="deck"><div class="dcard" style="transform:translate(-2px,-2px)"><div class="back"></div></div><div class="dcard" style="transform:translate(-1px,-1px)"><div class="back"></div></div><div class="dcard"><div class="back"></div></div></div><small>Baralho · ${S.deck.length}</small></div>
-    <div class="mid">♠♥♦♣</div>
+    ${mid}
     <div class="pilebox"><div class="stack" id="disc">${discHTML(tot)}</div><small id="disclab">Descarte · ${tot}</small></div></div>`;
 }
 
 function gameHTML(S,i){
   const me=S.seats[i],opp=S.seats[1-i];
+  if(S.rollAt&&animDone!==S.rollAt&&Date.now()-S.rollAt>8000)animDone=S.rollAt;
   const k=TABLE_IDS.indexOf(S.id)+1;
   const inTrade=S.status==='playing'&&S.phase==='trade';
   const timed=S.status==='playing'&&(S.phase==='trade'||S.phase==='parity'||S.phase==='choose');
   const bar=`<div class="topbar"><span class="pill">Mesa ${k}${inTrade?' · Turno '+S.turn+' de 3':''}</span><span class="pill">${esc(me.name)}</span>${timed?'<span class="pill timer" id="tm">⏱</span>':''}</div>`+(timed?`<div class="tbar" id="tbar"><i id="tbf"></i></div>`:'');
   const leave=`<button class="btn ghost" id="leave">${S.status==='playing'?'Abandonar partida':(S.status==='open'?'Sair da mesa':'Voltar ao lobby')}</button>`;
   const ev=(S.events&&S.events.length)?`<div class="events">${S.events.slice(-3).map(esc).join('<br>')}</div>`:'';
-  const oppPanel=sp=>`<div class="panel"><div class="who"><b>${esc(opp.name)}</b>${(sp&&opp.parity)?badge(opp.parity):''}</div>${backs()}</div>`;
-  const sumBox=`<div class="sum"><span>Soma das suas cartas</span><b>${sumH(me.hand)}</b></div>`;
 
   if(S.status==='open')return bar+`<div class="wait"><div class="big">🂠</div><h2>Aguardando oponente</h2><p class="sub">A partida começa quando outra pessoa sentar na mesa ${k}.</p></div>`+leave;
   if(S.status==='abandoned')return bar+`<div class="banner win">Vitória por W.O.<small>${esc(opp.name)} saiu da mesa.</small></div>`+leave;
+
+  const reveal=S.status==='finished';
+  const showPar=S.phase==='choose'||S.phase==='result';
+  const chip=x=>(reveal&&S.win===x)?` <span class="badge ${S.choice==='vida'?'v':'m'}">${S.choice==='vida'?'VIDA':'MORTE'}</span>`:'';
+  const oppPanel=`<div class="panel${reveal?' mini':''}"><div class="who"><b>${esc(opp.name)}${reveal&&S.winner===1-i?' 👑':''}</b><span>${showPar&&opp.parity?badge(opp.parity):''}${chip(1-i)}</span></div>${reveal?handStatic(opp.hand,null,'opphand','mini5 rev')+`<div class="sum"><span>Soma</span><b id="oppsum">${sumH(opp.hand)}</b></div>`:backs()}</div>`;
+  const sumBox=`<div class="sum"><span>Sua soma${showPar&&me.parity?' ':''}</span>${showPar&&me.parity?badge(me.parity):''}${chip(i)}<b id="mysum">${sumH(me.hand)}</b></div>`;
+  const common=bar+oppPanel+feltHTML(S)+ev;
+  const myHand=nw=>handStatic(me.hand,nw||null,'hand');
 
   if(S.phase==='trade'){
     const oppState=opp.acted?`✔ <b>${esc(opp.name)}</b> já jogou neste turno.`:`<b>${esc(opp.name)}</b> ainda está escolhendo...`;
     if(!me.acted&&!me.done){
       const max=maxTrade(S,i);
       const hand=me.hand.map((n,x)=>`<button class="slot" data-i="${x}" aria-label="carta ${x+1}">${cardHTML(cardOf(n))}</button>`).join('');
-      return bar+oppPanel(false)+feltHTML(S)+ev+`<div class="hand" id="hand">${hand}</div>`+sumBox+
+      return common+`<div class="hand" id="hand">${hand}</div>`+sumBox+
         `<p class="hint"><b>Sua vez, ao mesmo tempo que o oponente!</b> Toque nas cartas para trocar: de 1 a <b>${max}</b>. Trocas usadas: ${me.traded}/3.</p>
         <p class="hint">${oppState}</p>
         <button class="btn" id="trade" disabled>Trocar 0 cartas</button>
         <button class="btn ghost" id="direct">Ir direto para Par ou Ímpar</button>`;
     }
     const msg=me.done&&!me.lastNew.length?'Você está pronto para o Par ou Ímpar.':'Você já jogou neste turno.';
-    return bar+oppPanel(false)+feltHTML(S)+ev+handStatic(me.hand,new Set(me.lastNew||[]),'hand')+sumBox+`<p class="hint">${msg}</p><p class="hint">${oppState}</p>`+leave;
+    return common+myHand(new Set(me.lastNew||[]))+sumBox+`<p class="hint">${msg}</p><p class="hint">${oppState}</p>`+leave;
   }
   if(S.phase==='parity'){
-    return bar+oppPanel(false)+feltHTML(S)+ev+handStatic(me.hand,null,'hand')+sumBox+
+    return common+myHand()+sumBox+
       `<p class="hint">Escolham ao mesmo tempo, vocês têm <b>15 segundos</b>: o <b>primeiro</b> a tocar define a escolha e o outro fica com a opção restante. Se o tempo acabar, é sorteado. Quem acertar a soma dos dados escolhe Vida ou Morte.</p>
       <div class="row2"><button class="btn vida" id="par">PAR</button><button class="btn morte" id="imp">ÍMPAR</button></div>`+leave;
   }
-  /* choose / result: animação dos dados primeiro */
-  if(S.rollAt&&animDone!==S.rollAt){
-    if(Date.now()-S.rollAt>8000)animDone=S.rollAt;
-    else return bar+`<h2>Rolando os dados...</h2><div class="dice" id="dice"><div class="dw">${dieHTML(0)}</div><div class="dw">${dieHTML(0)}</div></div><div class="dcap" id="dcap"></div>`;
-  }
+  /* choose / result: tudo na mesma tela, dados no centro da mesa */
   const total=S.dice[0]+S.dice[1];
-  const diceBox=`<div class="dice">${dieHTML(S.dice[0])}${dieHTML(S.dice[1])}</div><p class="sub">Soma ${total}: <b>${total%2===0?'PAR':'ÍMPAR'}</b>. ${esc(S.seats[S.win].name)} acertou.</p>`;
+  if(isRolling(S))return common+myHand()+sumBox+`<div class="dcap" id="dcap">Rolando os dados...</div>`+leave;
+  const cap=`<div class="dcap" id="dcap">Soma ${total}: <b>${total%2===0?'PAR':'ÍMPAR'}</b>. ${esc(S.seats[S.win].name)} acertou.</div>`;
   if(S.phase==='choose'){
-    if(S.win===i)return bar+diceBox+handStatic(me.hand)+sumBox+
+    if(S.win===i)return common+myHand()+sumBox+cap+
       `<p class="hint">Você acertou! Escolha <b>Vida</b> (vence a maior soma) ou <b>Morte</b> (vence a menor soma) em <b>15 segundos</b>, ou a escolha será sorteada. A mão do oponente continua oculta.</p>
       <div class="row2"><button class="btn vida" id="v">VIDA<br><small>maior soma</small></button><button class="btn morte" id="m">MORTE<br><small>menor soma</small></button></div>`+leave;
-    return bar+diceBox+oppPanel(true)+handStatic(me.hand)+sumBox+`<p class="hint"><b>${esc(opp.name)}</b> acertou e está escolhendo Vida ou Morte...</p>`+leave;
+    return common+myHand()+sumBox+cap+`<p class="hint"><b>${esc(opp.name)}</b> acertou e está escolhendo Vida ou Morte...</p>`+leave;
   }
   /* resultado */
-  const sums=S.seats.map(s=>sumH(s.hand));
+  const sums=S.seats.map(x=>sumH(x.hand));
   const rule=S.choice==='vida'?'VIDA: vence a maior soma':'MORTE: vence a menor soma';
   const reason=`${esc(S.seats[S.win].name)} acertou o ${total%2===0?'par':'ímpar'} e escolheu ${rule}. `+(S.winner<0?'As somas são iguais.':`Somas: ${esc(S.seats[0].name)} ${sums[0]} x ${sums[1]} ${esc(S.seats[1].name)}.`);
   const banner=S.winner<0?`<div class="banner draw">Empate<small>${reason}</small></div>`
     :`<div class="banner win">${esc(S.seats[S.winner].name)} venceu!<small>${reason}</small></div>`;
-  return bar+`<div class="dice">${dieHTML(S.dice[0])}${dieHTML(S.dice[1])}</div>`+banner+ev+
-    S.seats.map((p,x)=>`<div class="panel mini"><div class="who"><b>${esc(p.name)}${S.winner===x?' 👑':''}</b><span>${badge(p.parity)}${x===S.win?` <span class="badge ${S.choice==='vida'?'v':'m'}">${S.choice==='vida'?'VIDA':'MORTE'}</span>`:''}</span></div>${handStatic(p.hand)}<div class="sum"><span>Soma</span><b>${sums[x]}</b></div></div>`).join('')+leave;
+  return common+myHand()+sumBox+banner+leave;
 }
 
 /* ============================================================
@@ -683,7 +695,7 @@ function flyIn(el,from,o={}){
 /* carta descartada: da mão até a pilha de descarte */
 function outFlight(html,r,delay,flip){
   const tgt=$('#disc');if(!tgt)return Promise.resolve();
-  const g=document.createElement('div');g.className='ghost';
+  const g=document.createElement('div');g.className='flyc';
   g.style.cssText=`left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;
   g.innerHTML=html;document.body.appendChild(g);
   const t=tgt.getBoundingClientRect();
@@ -757,22 +769,17 @@ function animTrade(isMe,a,b,before){
   return Promise.all(jobs);
 }
 
-/* resultado: palavra VIDA/MORTE, cartas viram, somas sobem, banner + fanfarra */
+/* resultado: palavra VIDA/MORTE, mão do oponente vira, soma sobe, banner + fanfarra */
 async function animResult(S,i){
   const banner=document.querySelector('.banner');
   if(banner){banner.style.animation='none';banner.style.opacity='0';}
-  const panels=[...document.querySelectorAll('.panel.mini')];
-  panels.forEach(pn=>{const b=pn.querySelector('.sum b');if(b)b.textContent='0';});
+  const os=$('#oppsum');if(os)os.textContent='0';
   Snd.sfx(S.choice==='vida'?'vida':'morte');
   flashWord(S.choice==='vida'?'VIDA':'MORTE',S.choice==='vida'?'vida':'morte');
-  let t=1100;
-  [1-i,i].forEach(k=>{
-    const pn=panels[k];if(!pn)return;
-    pn.querySelectorAll('.slot').forEach((sl,x)=>{flipIn(sl,460,t+x*110);setTimeout(()=>Snd.sfx('flip'),t+x*110+230);});
-    countUp(pn.querySelector('.sum b'),sumH(S.seats[k].hand),t+5*110+200,500);
-    t+=5*110+600;
-  });
-  await sleep(t+300);
+  const t=1100;
+  document.querySelectorAll('#opphand .slot').forEach((sl,x)=>{flipIn(sl,460,t+x*110);setTimeout(()=>Snd.sfx('flip'),t+x*110+230);});
+  countUp(os,sumH(S.seats[1-i].hand),t+5*110+200,500);
+  await sleep(t+5*110+800);
   if(banner){
     banner.style.opacity='';
     if(banner.animate)banner.animate([{transform:'scale(.6)',opacity:0},{transform:'scale(1.08)',opacity:1,offset:.6},{transform:'scale(1)',opacity:1}],{duration:450,easing:'ease-out'});
