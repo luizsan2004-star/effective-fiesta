@@ -2492,6 +2492,9 @@ async function openProfile(dev,name,push){
     const w=ws.exists?ws.data():{};
     const uname=(us&&!us.empty)?(us.docs[0].data().name||''):'';
     if(profCur)profCur.fname=uname;
+    /* perfil do administrador: quem vê (menos ele mesmo) sempre enxerga o saldo inicial, nunca o infinito */
+    const tAdm=!!uname&&ADMIN_USERS.some(a=>userKey(a)===userKey(uname));   /* só o nome de usuário da lista ADMIN_USERS conta */
+    const shownCoins=(tAdm&&!isAdmin())?START_COINS:(w.coins||0);
     const all=hs.docs.map(d=>d.data());
     const games=all.filter(h=>h.type==='game');
     const n=games.length,wins=games.filter(h=>h.res==='win').length,losses=games.filter(h=>h.res==='loss').length,draws=n-wins-losses;
@@ -2514,7 +2517,7 @@ async function openProfile(dev,name,push){
     }).join('');
     $('#proftitle').textContent=uname?('@'+uname):(name||'Jogador');
     bx.innerHTML=`
-      <div class="pcoins">🪙 ${fmtC(w.coins||0)}</div>
+      <div class="pcoins">🪙 ${fmtC(shownCoins)}</div>
       <div id="pfr"></div>
       <div class="pgrid">
         <div><small>Partidas</small><b>${n}</b></div>
