@@ -152,7 +152,11 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .fw.turn{font-size:2.2rem;top:30%}
 .rvdark{position:fixed;inset:0;z-index:90;pointer-events:auto;background:radial-gradient(ellipse at center,#000000c8 0%,#000000f2 80%)}
 .rvtxt{position:fixed;left:0;right:0;top:40%;z-index:95;text-align:center;pointer-events:none;font:700 1.3rem Georgia,serif;letter-spacing:.14em;color:#e8c35a;text-shadow:0 0 18px #e8c35a88}
-.rvflash{position:fixed;inset:0;z-index:98;pointer-events:none}
+.rvflash{position:fixed;inset:0;z-index:91;pointer-events:none}
+.rvflash.vida{background:radial-gradient(ellipse at center,#f6e29a 0%,#d8b24a 55%,#a67c1c 100%)}
+.rvflash.morte{background:radial-gradient(ellipse at center,#9a1424 0%,#5a0a14 60%,#2a0409 100%)}
+.fw.vida.rv{color:#1c3b00;text-shadow:0 0 26px #fff9,0 2px 0 #fff6}
+.fw.morte.rv{color:#ffe3e6;text-shadow:0 0 30px #ff2a3f,0 3px 0 #000a}
 .dbig{position:fixed;inset:0;z-index:95;pointer-events:none}
 .dbig .dw2{position:absolute;left:50%;top:50%;margin:calc(min(62px,15vw)/-2) 0 0 calc(min(62px,15vw)/-2)}
 .dbig .die{width:min(62px,15vw);height:min(62px,15vw);padding:min(8px,2vw);gap:1px;border-radius:min(12px,3vw);box-shadow:0 4px 0 #bbb,0 10px 18px #000c}
@@ -166,6 +170,8 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .dcap{text-align:center;font-size:1.25rem;min-height:2em}
 .dcap b{color:var(--gold)}
 .mid.dr{display:flex;gap:8px;opacity:1;letter-spacing:0;font-size:1rem}
+.midw{position:relative;display:flex;align-items:center;justify-content:center}
+.midw .mid.dr{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2}
 .felt .die{width:52px;height:52px;padding:7px;border-radius:10px;gap:1px;box-shadow:0 3px 0 #bbb,0 5px 8px #0008}
 .felt .die.q{font-size:1.5rem}
 .hand.mini5.rev .slot{max-width:56px}
@@ -1687,7 +1693,7 @@ const isRolling=S=>(S.phase==='choose'||S.phase==='result')&&S.rollAt&&animDone!
 function feltHTML(S){
   const tot=S.seats[0].traded+S.seats[1].traded;
   const mid=((S.phase==='choose'||S.phase==='result')&&S.rollAt)
-    ?`<div class="mid dr" id="dice">${isRolling(S)?`<div class="dw" style="opacity:0">${dieHTML(S.dice[0])}</div><div class="dw" style="opacity:0">${dieHTML(S.dice[1])}</div>`:`<div class="dw">${dieHTML(S.dice[0])}</div><div class="dw">${dieHTML(S.dice[1])}</div>`}</div>`
+    ?`<div class="midw"><div class="mid">♠♥♦♣</div><div class="mid dr" id="dice">${isRolling(S)?`<div class="dw" style="opacity:0">${dieHTML(S.dice[0])}</div><div class="dw" style="opacity:0">${dieHTML(S.dice[1])}</div>`:`<div class="dw">${dieHTML(S.dice[0])}</div><div class="dw">${dieHTML(S.dice[1])}</div>`}</div></div>`
     :`<div class="mid">♠♥♦♣</div>`;
   return `<div class="felt"><div class="pilebox"><div class="stack" id="deck"><div class="dcard" style="transform:translate(-2px,-2px)"><div class="back"></div></div><div class="dcard" style="transform:translate(-1px,-1px)"><div class="back"></div></div><div class="dcard"><div class="back"></div></div></div><small>Baralho · ${S.deck.length}</small></div>
     ${mid}
@@ -1936,13 +1942,16 @@ async function suspenseReveal(c){
   if(t.animate)await t.animate([{opacity:1},{opacity:0}],{duration:250,fill:'both'}).finished.catch(()=>{});
   t.remove();
   await sleep(450);   /* silêncio antes da revelação */
-  const f=document.createElement('div');f.className='rvflash';f.style.background=c==='vida'?'#f0d98a':'#c8202f';
+  /* o fundo escuro vira a cor do resultado e some nessa mesma cor */
+  const f=document.createElement('div');f.className='rvflash '+c;
   document.body.appendChild(f);
-  if(f.animate)f.animate([{opacity:.85},{opacity:0}],{duration:700}).onfinish=()=>f.remove();else f.remove();
+  if(f.animate)f.animate([{opacity:0},{opacity:1}],{duration:380,easing:'ease-out',fill:'both'});
   Snd.sfx(c==='vida'?'vida':'morte');
-  flashWord(c==='vida'?'VIDA':'MORTE',c==='vida'?'vida':'morte');
-  await sleep(1900);
-  if(o.animate)await o.animate([{opacity:1},{opacity:0}],{duration:600,fill:'both'}).finished.catch(()=>{});
+  flashWord(c==='vida'?'VIDA':'MORTE',(c==='vida'?'vida':'morte')+' rv');
+  await sleep(2100);
+  if(o.animate)o.animate([{opacity:1},{opacity:0}],{duration:700,fill:'both'});
+  if(f.animate)await f.animate([{opacity:1},{opacity:0}],{duration:700,fill:'both'}).finished.catch(()=>{});
+  f.remove();
   o.remove();
 }
 async function animResult(S,i){
