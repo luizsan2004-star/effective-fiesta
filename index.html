@@ -153,6 +153,11 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .rvdark{position:fixed;inset:0;z-index:90;pointer-events:auto;background:radial-gradient(ellipse at center,#000000c8 0%,#000000f2 80%)}
 .rvtxt{position:fixed;left:0;right:0;top:40%;z-index:95;text-align:center;pointer-events:none;font:700 1.3rem Georgia,serif;letter-spacing:.14em;color:#e8c35a;text-shadow:0 0 18px #e8c35a88}
 .rvflash{position:fixed;inset:0;z-index:98;pointer-events:none}
+.dbig{position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;gap:7vw;pointer-events:none}
+.dbig .die{width:min(130px,28vw);height:min(130px,28vw);padding:min(15px,3.2vw);gap:3px;border-radius:min(22px,4.6vw);box-shadow:0 6px 0 #bbb,0 14px 28px #000c}
+.dbig .die.q{font-size:3.4rem}
+.rvtxt.dsum{top:calc(50% + min(110px,24vw));font-size:1.6rem}
+.rvtxt.dsum b{color:#fff}
 .fw.par{font-size:2.4rem}
 .cf{position:fixed;top:0;width:8px;height:14px;z-index:90;pointer-events:none;border-radius:2px}
 .vig{position:fixed;inset:0;z-index:80;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,#c8202fcc 100%)}
@@ -1790,12 +1795,16 @@ function lock(p,max){
   });
 }
 
-/* vira a carta: costas -> frente */
+/* vira a carta de verdade (giro 3D): costas -> frente */
+const FLIP_MS=520;
 function flipIn(slot,dur,delay){
   const card=slot.querySelector('.card');if(!card||!card.animate)return;
+  dur=dur||FLIP_MS;
   const cover=document.createElement('div');cover.className='back';slot.appendChild(cover);
-  card.animate([{transform:'scaleX(0)'},{transform:'scaleX(0)',offset:.5},{transform:'scaleX(1)'}],{duration:dur,delay,easing:'ease-out',fill:'backwards'});
-  const a=cover.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)',offset:.5},{transform:'scaleX(0)'}],{duration:dur,delay,easing:'ease-in',fill:'both'});
+  [card,cover].forEach(e=>{e.style.backfaceVisibility='hidden';e.style.webkitBackfaceVisibility='hidden';});
+  const P='perspective(650px) ';
+  card.animate([{transform:P+'rotateY(180deg) scale(1)'},{transform:P+'rotateY(90deg) scale(1.1)',offset:.5},{transform:P+'rotateY(0deg) scale(1)'}],{duration:dur,delay,easing:'cubic-bezier(.4,.1,.3,1)',fill:'backwards'});
+  const a=cover.animate([{transform:P+'rotateY(0deg) scale(1)'},{transform:P+'rotateY(-90deg) scale(1.1)',offset:.5},{transform:P+'rotateY(-180deg) scale(1)'}],{duration:dur,delay,easing:'cubic-bezier(.4,.1,.3,1)',fill:'both'});
   a.finished.then(()=>cover.remove()).catch(()=>cover.remove());
 }
 
@@ -1807,7 +1816,7 @@ function flyIn(el,from,o={}){
   const dx=from.left+from.width/2-(t.left+t.width/2),dy=from.top+from.height/2-(t.top+t.height/2),s=from.width/t.width;
   el.style.zIndex=30;
   const a=el.animate([{transform:`translate(${dx}px,${dy}px) scale(${s}) rotate(-10deg)`},{transform:'none'}],{duration:dur,delay,easing:'cubic-bezier(.3,.7,.2,1)',fill:'backwards'});
-  if(o.face){flipIn(el,dur,delay);setTimeout(()=>Snd.sfx('flip'),delay+dur*.55);}
+  if(o.face){const fd=delay+dur*.4;flipIn(el,FLIP_MS,fd);setTimeout(()=>Snd.sfx('flip'),fd+FLIP_MS*.5);}
   setTimeout(()=>Snd.sfx('deal'),delay);
   const clear=()=>{el.style.zIndex='';};
   return a.finished.then(clear).catch(clear);
@@ -1827,8 +1836,10 @@ function outFlight(html,r,delay,flip){
     const card=g.querySelector('.card');
     if(card){
       const cover=document.createElement('div');cover.className='back';g.firstChild.appendChild(cover);
-      cover.animate([{transform:'scaleX(0)'},{transform:'scaleX(0)',offset:.5},{transform:'scaleX(1)'}],{duration:OUT_MS,delay,fill:'both'});
-      card.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)',offset:.5},{transform:'scaleX(0)'}],{duration:OUT_MS,delay,fill:'both'});
+      [card,cover].forEach(x=>{x.style.backfaceVisibility='hidden';x.style.webkitBackfaceVisibility='hidden';});
+      const P='perspective(650px) ',o2={duration:FLIP_MS+80,delay:delay+120,easing:'cubic-bezier(.4,.1,.3,1)',fill:'both'};
+      card.animate([{transform:P+'rotateY(0deg) scale(1)'},{transform:P+'rotateY(-90deg) scale(1.1)',offset:.5},{transform:P+'rotateY(-180deg) scale(1)'}],o2);
+      cover.animate([{transform:P+'rotateY(180deg) scale(1)'},{transform:P+'rotateY(90deg) scale(1.1)',offset:.5},{transform:P+'rotateY(0deg) scale(1)'}],o2);
     }
   }
   setTimeout(()=>Snd.sfx('deal'),delay);
@@ -1944,7 +1955,7 @@ async function animResult(S,i){
   document.querySelectorAll('#opphand .slot .back[data-cv]').forEach(c=>c.remove());
   await suspenseReveal(S.choice);
   const t=300,gap=300;
-  document.querySelectorAll('#opphand .slot').forEach((sl,x)=>{flipIn(sl,700,t+x*gap);setTimeout(()=>Snd.sfx('flip'),t+x*gap+350);});
+  document.querySelectorAll('#opphand .slot').forEach((sl,x)=>{flipIn(sl,600,t+x*gap);setTimeout(()=>Snd.sfx('flip'),t+x*gap+300);});
   countUp(os,seatSum(S,1-i),t+5*gap+300,800);
   await sleep(t+5*gap+1300);
   if(banner){
@@ -1969,26 +1980,46 @@ async function runDice(S){
     const other=pk===me?esc(S.seats[1-pk].name)+' fica':'Você fica';
     await sceneCard('',`${pn} escolheu ${pp==='par'?'PAR':'ÍMPAR'}`,'Hora de rolar os dados!',3600);
     const wr=[...document.querySelectorAll('#dice .dw')],cap=$('#dcap');
+    const tot=S.dice[0]+S.dice[1],lbl=tot%2===0?'PAR':'ÍMPAR';
+    /* dados da mesa ficam escondidos (já com o resultado) até o fim da rolagem */
+    wr.forEach((w,k)=>{w.innerHTML=dieHTML(S.dice[k]);w.style.opacity='0';});
+    if(cap)cap.innerHTML=`Soma <b>${tot}</b>: <b>${lbl}</b>`;
+    /* tela escura + dados grandes no meio */
+    const o=document.createElement('div');o.className='rvdark';
+    const box=document.createElement('div');box.className='dbig';
+    box.innerHTML='<div class="dw2">'+dieHTML(rnd6(),true)+'</div><div class="dw2">'+dieHTML(rnd6(),true)+'</div>';
+    const bt=document.createElement('div');bt.className='rvtxt dsum';bt.style.opacity='0';
+    document.body.appendChild(o);document.body.appendChild(box);document.body.appendChild(bt);
+    const bw=[...box.children];
+    if(o.animate)o.animate([{opacity:0},{opacity:1}],{duration:600,fill:'both'});
+    await sleep(350);
     Snd.sfx('dice');
-    wr.forEach((w,k)=>w.animate([{transform:`translate(${k?150:-150}px,-140px) rotate(${k?560:-560}deg) scale(.5)`,opacity:0},{transform:'translate(0,0) rotate(0deg) scale(1)',opacity:1}],{duration:950,delay:k*140,easing:'cubic-bezier(.2,.9,.3,1.3)',fill:'backwards'}));
+    bw.forEach((w,k)=>w.animate([{transform:`translate(${k?70:-70}vw,-6vh) rotate(${k?720:-720}deg) scale(.7)`,opacity:0},{transform:'translate(0,0) rotate(0deg) scale(1)',opacity:1}],{duration:1100,delay:k*160,easing:'cubic-bezier(.2,.9,.3,1.15)',fill:'backwards'}));
     for(const dl of [60,60,60,65,70,80,95,115,140,170,210,260,320,400,500,620]){
-      if(!wr[0]||!wr[0].isConnected)break;
-      wr.forEach(w=>{w.innerHTML=dieHTML(rnd6(),true);});
+      if(!bw[0]||!bw[0].isConnected)break;
+      bw.forEach(w=>{w.innerHTML=dieHTML(rnd6(),true);});
       await sleep(dl);
     }
-    wr.forEach((w,k)=>{w.innerHTML=dieHTML(S.dice[k]);w.animate([{transform:'scale(1.3) rotate(-6deg)'},{transform:'scale(.94)',offset:.55},{transform:'scale(1)'}],{duration:380,easing:'ease-out'});});
+    bw.forEach((w,k)=>{w.innerHTML=dieHTML(S.dice[k]);w.animate([{transform:'scale(1.3) rotate(-6deg)'},{transform:'scale(.94)',offset:.55},{transform:'scale(1)'}],{duration:380,easing:'ease-out'});});
     Snd.sfx('diceLand');
-    const tot=S.dice[0]+S.dice[1];
-    if(cap){
-      cap.innerHTML=`Soma <b>${tot}</b> → <b>${tot%2===0?'PAR':'ÍMPAR'}</b>`;
-      cap.animate([{transform:'scale(.6)',opacity:0},{transform:'scale(1.1)',opacity:1,offset:.6},{transform:'scale(1)'}],{duration:420,easing:'ease-out'});
-    }
-    await sleep(1600);
+    bt.innerHTML=`Soma <b>${tot}</b> → <b>${lbl}</b>`;bt.style.opacity='1';
+    if(bt.animate)bt.animate([{transform:'scale(.6)',opacity:0},{transform:'scale(1.1)',opacity:1,offset:.6},{transform:'scale(1)',opacity:1}],{duration:420,easing:'ease-out'});
+    await sleep(1800);
+    /* os dados grandes somem aos poucos e os da mesa aparecem aos poucos */
+    const FD=900;
+    if(box.animate)box.animate([{opacity:1},{opacity:0}],{duration:FD,fill:'both'});
+    if(bt.animate)bt.animate([{opacity:1},{opacity:0}],{duration:FD,fill:'both'});
+    if(o.animate)o.animate([{opacity:1},{opacity:0}],{duration:FD,fill:'both'});
+    wr.forEach(w=>{if(w.animate)w.animate([{opacity:0},{opacity:1}],{duration:FD,fill:'both'});w.style.opacity='';});
+    if(cap&&cap.animate)cap.animate([{opacity:0},{opacity:1}],{duration:FD});
+    await sleep(FD+50);
+    o.remove();box.remove();bt.remove();
+    await sleep(500);
     if(S.phase==='choose'){
       const meSeat=mine?mine.seat:0;
       if(S.fm)await sceneCard('',S.fm.toUpperCase(),'',3200,'vm');else await sceneCard('','VIDA OU MORTE',S.win===meSeat?'Você acertou!<br>A decisão é sua.':`${esc(S.seats[S.win].name)} acertou<br>e vai decidir.`,4000,'vm');
     }
-  }finally{animDone=S.rollAt;animating=false;lastKey='';renderAll();}
+  }finally{document.querySelectorAll('.dbig,.dsum').forEach(e=>e.remove());document.querySelectorAll('.rvdark').forEach(e=>e.remove());animDone=S.rollAt;animating=false;lastKey='';renderAll();}
 }
 
 /* decide quais animações tocar comparando o estado anterior com o novo */
