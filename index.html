@@ -153,10 +153,10 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .rvdark{position:fixed;inset:0;z-index:90;pointer-events:auto;background:radial-gradient(ellipse at center,#000000c8 0%,#000000f2 80%)}
 .rvtxt{position:fixed;left:0;right:0;top:40%;z-index:95;text-align:center;pointer-events:none;font:700 1.3rem Georgia,serif;letter-spacing:.14em;color:#e8c35a;text-shadow:0 0 18px #e8c35a88}
 .rvflash{position:fixed;inset:0;z-index:98;pointer-events:none}
-.dbig{position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;gap:7vw;pointer-events:none}
-.dbig .die{width:min(130px,28vw);height:min(130px,28vw);padding:min(15px,3.2vw);gap:3px;border-radius:min(22px,4.6vw);box-shadow:0 6px 0 #bbb,0 14px 28px #000c}
-.dbig .die.q{font-size:3.4rem}
-.rvtxt.dsum{top:calc(50% + min(110px,24vw));font-size:1.6rem}
+.dbig{position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;gap:5vw;pointer-events:none}
+.dbig .die{width:min(62px,15vw);height:min(62px,15vw);padding:min(8px,2vw);gap:1px;border-radius:min(12px,3vw);box-shadow:0 4px 0 #bbb,0 10px 18px #000c}
+.dbig .die.q{font-size:2rem}
+.rvtxt.dsum{top:calc(50% + min(52px,12vw));font-size:1.4rem;line-height:1.25}
 .rvtxt.dsum b{color:#fff}
 .fw.par{font-size:2.4rem}
 .cf{position:fixed;top:0;width:8px;height:14px;z-index:90;pointer-events:none;border-radius:2px}
@@ -1686,7 +1686,7 @@ const isRolling=S=>(S.phase==='choose'||S.phase==='result')&&S.rollAt&&animDone!
 function feltHTML(S){
   const tot=S.seats[0].traded+S.seats[1].traded;
   const mid=((S.phase==='choose'||S.phase==='result')&&S.rollAt)
-    ?`<div class="mid dr" id="dice">${isRolling(S)?`<div class="dw">${dieHTML(0)}</div><div class="dw">${dieHTML(0)}</div>`:`<div class="dw">${dieHTML(S.dice[0])}</div><div class="dw">${dieHTML(S.dice[1])}</div>`}</div>`
+    ?`<div class="mid dr" id="dice">${isRolling(S)?`<div class="dw" style="opacity:0">${dieHTML(S.dice[0])}</div><div class="dw" style="opacity:0">${dieHTML(S.dice[1])}</div>`:`<div class="dw">${dieHTML(S.dice[0])}</div><div class="dw">${dieHTML(S.dice[1])}</div>`}</div>`
     :`<div class="mid">♠♥♦♣</div>`;
   return `<div class="felt"><div class="pilebox"><div class="stack" id="deck"><div class="dcard" style="transform:translate(-2px,-2px)"><div class="back"></div></div><div class="dcard" style="transform:translate(-1px,-1px)"><div class="back"></div></div><div class="dcard"><div class="back"></div></div></div><small>Baralho · ${S.deck.length}</small></div>
     ${mid}
@@ -1760,10 +1760,10 @@ function gameHTML(S,i){
   if(rolling)return G(top,myHand()+sumBox+`<div class="dcap" id="dcap">Rolando os dados...</div>`,leave);
   const cap=`<div class="dcap" id="dcap">Soma ${total}: <b>${total%2===0?'PAR':'ÍMPAR'}</b></div>`;
   if(S.phase==='choose'){
-    if(S.fm)return G(top,myHand()+sumBox+cap+`<p class="hint"><b>${S.fm.toUpperCase()}</b> · ${S.fm==='vida'?'maior soma vence':'menor soma vence'}</p>`,leave);
+    if(S.fm)return G(top,myHand()+sumBox+cap+`<p class="hint"><b>${S.fm.toUpperCase()}</b></p>`,leave);
     if(S.win===i)return G(top,myHand()+sumBox+cap+
-      `<p class="hint"><b>Você acertou!</b> Escolha:</p>`,
-      `<div class="row2"><button class="btn vida" id="v">VIDA<small>maior soma</small></button><button class="btn morte" id="m">MORTE<small>menor soma</small></button></div>`+leave);
+      '',
+      `<div class="row2"><button class="btn vida" id="v">VIDA</button><button class="btn morte" id="m">MORTE</button></div>`+leave);
     return G(top,myHand()+sumBox+cap+`<p class="hint"><b>${esc(opp.name)}</b> está escolhendo...</p>`,leave);
   }
   /* resultado */
@@ -1994,7 +1994,7 @@ async function runDice(S){
     if(o.animate)o.animate([{opacity:0},{opacity:1}],{duration:600,fill:'both'});
     await sleep(350);
     Snd.sfx('dice');
-    bw.forEach((w,k)=>w.animate([{transform:`translate(${k?70:-70}vw,-6vh) rotate(${k?720:-720}deg) scale(.7)`,opacity:0},{transform:'translate(0,0) rotate(0deg) scale(1)',opacity:1}],{duration:1100,delay:k*160,easing:'cubic-bezier(.2,.9,.3,1.15)',fill:'backwards'}));
+    bw.forEach((w,k)=>w.animate([{transform:`translate(${k?-38:38}vw,-60vh) rotate(${k?-540:540}deg) scale(.8)`,opacity:1},{transform:'translate(0,0) rotate(0deg) scale(1)',opacity:1}],{duration:1300,easing:'cubic-bezier(.3,.6,.35,1)',fill:'backwards'}));
     for(const dl of [60,60,60,65,70,80,95,115,140,170,210,260,320,400,500,620]){
       if(!bw[0]||!bw[0].isConnected)break;
       bw.forEach(w=>{w.innerHTML=dieHTML(rnd6(),true);});
@@ -2002,7 +2002,7 @@ async function runDice(S){
     }
     bw.forEach((w,k)=>{w.innerHTML=dieHTML(S.dice[k]);w.animate([{transform:'scale(1.3) rotate(-6deg)'},{transform:'scale(.94)',offset:.55},{transform:'scale(1)'}],{duration:380,easing:'ease-out'});});
     Snd.sfx('diceLand');
-    bt.innerHTML=`Soma <b>${tot}</b> → <b>${lbl}</b>`;bt.style.opacity='1';
+    bt.innerHTML=`<div style="font-size:.95rem;opacity:.85;letter-spacing:.08em">Soma ${tot}</div><b style="font-size:2.4rem;letter-spacing:.12em">${lbl}</b>`;bt.style.opacity='1';
     if(bt.animate)bt.animate([{transform:'scale(.6)',opacity:0},{transform:'scale(1.1)',opacity:1,offset:.6},{transform:'scale(1)',opacity:1}],{duration:420,easing:'ease-out'});
     await sleep(1800);
     /* os dados grandes somem aos poucos e os da mesa aparecem aos poucos */
