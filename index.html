@@ -175,6 +175,14 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .rdots i.on{background:var(--gold)}
 .sb.rb{width:auto;border-radius:99px;padding:0 12px;font-size:.85rem}
 
+/* telas de transição entre cenas */
+.scene{position:fixed;inset:0;z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px;
+  background:radial-gradient(ellipse at center,#0f4a34f2 0%,#03140ef8 85%);pointer-events:auto}
+.scene .sci{font-size:4.6rem;animation:pop .5s ease both}
+.scene .sc1{font-family:Georgia,serif;font-size:2.3rem;font-weight:900;letter-spacing:.06em;color:var(--gold);text-shadow:0 3px 0 #000a,0 0 26px #e8c35aaa;animation:rise .6s .15s both}
+.scene .sc2{color:var(--ink);font-size:1.15rem;line-height:1.45;max-width:340px;animation:rise .6s .35s both}
+.scene.vm .sc1{color:#ff5b69;text-shadow:0 3px 0 #000a,0 0 26px #c8202f}
+
 #voicebar{display:none;margin:6px 0 2px}
 .vp{display:flex;align-items:center;gap:8px;background:#0007;border:1px solid #ffffff2a;border-radius:14px;padding:8px 10px;flex-wrap:wrap}
 .vu{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted);min-width:0}
@@ -212,7 +220,7 @@ h1{animation:glow 3s ease-in-out infinite alternate}
   <div class="rview"><div class="rtrack" id="rtrack">
     <div class="rslide"><div class="ri">🃏</div><h3>As cartas</h3><p>Cada jogador recebe 5 cartas. Ás vale 1, J, Q e K valem 10, e as outras valem o número delas. A soma das suas cartas é a sua pontuação.</p></div>
     <div class="rslide"><div class="ri">🔄</div><h3>Troca</h3><p>Você pode trocar até 3 cartas na partida, no máximo 2 por turno, em até 3 turnos de 30 segundos. Também pode pular a troca.</p></div>
-    <div class="rslide"><div class="ri">🎲</div><h3>Par ou Ímpar</h3><p>Os dois escolhem Par ou Ímpar em 15 segundos. Dois dados são rolados, e quem acertar a soma escolhe Vida ou Morte, também em 15 segundos.</p></div>
+    <div class="rslide"><div class="ri">🎲</div><h3>Par ou Ímpar</h3><p>Um jogador é sorteado para escolher Par ou Ímpar em 15 segundos, e o outro fica com a opção restante. Dois dados são rolados, e quem acertar a soma escolhe Vida ou Morte, também em 15 segundos.</p></div>
     <div class="rslide"><div class="ri">⚖️</div><h3>Vida ou Morte</h3><p><b>Vida:</b> vence a maior soma.<br><b>Morte:</b> vence a menor soma.<br>Soma igual é empate.</p></div>
     <div class="rslide"><div class="ri">⏱</div><h3>Tempo e abandono</h3><p>Se o tempo acabar em qualquer escolha, ela é sorteada. Quem sair da mesa perde.</p></div>
   </div></div>
@@ -403,7 +411,8 @@ const esc=s=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const rnd6=()=>1+Math.floor(Math.random()*6);
 const TABLE_IDS=['mesa1','mesa2','mesa3','mesa4'];
-const ROLL_MS=3400;          /* duração da animação dos dados (entra no prazo de Vida/Morte) */
+const ROLL_MS=9600;          /* tela "escolheu PAR" + dados + tela "VIDA OU MORTE" (entra no prazo de Vida/Morte) */
+const PARITY_LEAD=3800;      /* tela "PAR OU ÍMPAR" antes de começar a contar os 15s */
 const CHOICE_MS=15000;       /* tempo para Par/Ímpar e Vida/Morte */
 
 const cardOf=n=>{const su=SUITS[Math.floor(n/13)%4],r=RANKS[n%13];return {r,s:su.s,red:su.red,v:val(r)};};
@@ -413,14 +422,15 @@ const backs=()=>`<div class="hand mini5" id="opphand">${[0,1,2,3,4].map(()=>`<di
 const badge=p=>`<span class="badge ${p==='par'?'v':'m'}">${p==='par'?'PAR':'ÍMPAR'}</span>`;
 
 const emptySeat=()=>({uid:null,name:'',hand:[],traded:0,done:false,lastNew:[],parity:null,left:false,acted:false});
-const freshTable=id=>({id,v:0,ts:Date.now(),status:'open',seats:[emptySeat(),emptySeat()],deck:[],turn:1,cur:0,phase:'lobby',deadline:0,dice:[0,0],rollAt:0,win:-1,choice:'',winner:-1,abandoned:-1,events:[]});
+const freshTable=id=>({id,v:0,ts:Date.now(),status:'open',seats:[emptySeat(),emptySeat()],deck:[],turn:1,cur:0,phase:'lobby',deadline:0,dice:[0,0],rollAt:0,win:-1,choice:'',winner:-1,abandoned:-1,picker:-1,rematch:[false,false],events:[]});
+const pickerOf=S=>(S.picker===0||S.picker===1)?S.picker:0;
 const clone=o=>JSON.parse(JSON.stringify(o));
 function pushEv(S,t){S.events.push(t);if(S.events.length>4)S.events=S.events.slice(-4);}
 
 /* ---------- regras (puras sobre o estado) ---------- */
 function startTurnS(S){
   while(true){
-    if(S.turn>3){S.phase='parity';S.deadline=Date.now()+CHOICE_MS;S.seats.forEach(p=>{p.acted=false;});return;}
+    if(S.turn>3){S.phase='parity';S.picker=Math.random()<0.5?0:1;S.deadline=Date.now()+PARITY_LEAD+CHOICE_MS;S.seats.forEach(p=>{p.acted=false;});return;}
     S.seats.forEach(p=>{if(!p.done&&p.traded>=3)p.done=true;p.acted=p.done;});
     if(S.seats.every(p=>p.done)){S.turn++;continue;}
     S.phase='trade';S.deadline=Date.now()+30000;return;
@@ -439,6 +449,7 @@ function dealInto(S){
   for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}
   S.seats[0].hand=d.slice(0,5);S.seats[1].hand=d.slice(5,10);S.deck=d.slice(10);
   S.seats.forEach(s=>{s.traded=0;s.done=false;s.lastNew=[];s.parity=null;});
+  S.dice=[0,0];S.rollAt=0;S.win=-1;S.choice='';S.winner=-1;S.abandoned=-1;S.picker=-1;S.rematch=[false,false];
   S.status='playing';S.turn=1;S.cur=0;S.events=['A partida começou! Turnos de 30s; Par/Ímpar e Vida/Morte: 15s.'];
   startTurnS(S);
 }
@@ -567,16 +578,28 @@ function applyParity(S,i,c){
 function pickParity(i,c){
   commit(S=>{
     if(S.status!=='playing'||S.phase!=='parity'||S.seats[0].parity||S.seats[1].parity)return false;
+    if(pickerOf(S)!==i)return false;   /* só o jogador sorteado escolhe */
+    pushEv(S,`${S.seats[i].name} escolheu ${c==='par'?'PAR':'ÍMPAR'}`);
     applyParity(S,i,c);
   });
 }
 async function doTimeoutParity(){
   const ok=await commit(S=>{
     if(S.status!=='playing'||S.phase!=='parity'||S.seats[0].parity||S.seats[1].parity||Date.now()<S.deadline)return false;
-    pushEv(S,'Tempo esgotado: par ou ímpar sorteado');
-    applyParity(S,Math.random()<0.5?0:1,Math.random()<0.5?'par':'impar');
+    const pk=pickerOf(S);
+    pushEv(S,`Tempo esgotado: a escolha de ${S.seats[pk].name} foi sorteada`);
+    applyParity(S,pk,Math.random()<0.5?'par':'impar');
   });
   if(!ok)firedKey='';
+}
+function playAgain(i){
+  commit(S=>{
+    if(S.status!=='finished'||S.seats.some(s=>!s.uid||s.left))return false;
+    if(!S.rematch)S.rematch=[false,false];
+    if(S.rematch[i])return false;
+    S.rematch[i]=true;
+    if(S.rematch[0]&&S.rematch[1])dealInto(S);   /* os dois toparam: nova partida na mesma mesa */
+  });
 }
 function applyChoice(S,c){
   const w=S.win,o=1-w,sw=sumH(S.seats[w].hand),so=sumH(S.seats[o].hand);
@@ -634,7 +657,7 @@ function setDisc(n){
   const l=$('#disclab');if(l)l.textContent='Descarte · '+n;
 }
 const bump=()=>{const d=$('#disc');if(d&&d.animate)d.animate([{transform:'scale(1.14)'},{transform:'scale(1)'}],{duration:180});};
-const isRolling=S=>(S.phase==='choose'||S.phase==='result')&&S.rollAt&&animDone!==S.rollAt&&Date.now()-S.rollAt<=8000;
+const isRolling=S=>(S.phase==='choose'||S.phase==='result')&&S.rollAt&&animDone!==S.rollAt&&Date.now()-S.rollAt<=ROLL_MS+600;
 function feltHTML(S){
   const tot=S.seats[0].traded+S.seats[1].traded;
   const mid=((S.phase==='choose'||S.phase==='result')&&S.rollAt)
@@ -647,7 +670,7 @@ function feltHTML(S){
 
 function gameHTML(S,i){
   const me=S.seats[i],opp=S.seats[1-i];
-  if(S.rollAt&&animDone!==S.rollAt&&Date.now()-S.rollAt>8000)animDone=S.rollAt;
+  if(S.rollAt&&animDone!==S.rollAt&&Date.now()-S.rollAt>ROLL_MS+600)animDone=S.rollAt;
   const k=TABLE_IDS.indexOf(S.id)+1;
   const inTrade=S.status==='playing'&&S.phase==='trade';
   const timed=S.status==='playing'&&(S.phase==='trade'||S.phase==='parity'||S.phase==='choose');
@@ -681,9 +704,11 @@ function gameHTML(S,i){
     return common+myHand(new Set(me.lastNew||[]))+sumBox+`<p class="hint">${msg}</p><p class="hint">${oppState}</p>`+leave;
   }
   if(S.phase==='parity'){
-    return common+myHand()+sumBox+
-      `<p class="hint">Escolham ao mesmo tempo, vocês têm <b>15 segundos</b>: o <b>primeiro</b> a tocar define a escolha e o outro fica com a opção restante. Se o tempo acabar, é sorteado. Quem acertar a soma dos dados escolhe Vida ou Morte.</p>
+    if(pickerOf(S)===i)return common+myHand()+sumBox+
+      `<p class="hint">🎲 <b>Você foi sorteado!</b> Só você escolhe Par ou Ímpar, e <b>${esc(opp.name)}</b> fica com a opção restante. Você tem <b>15 segundos</b>; se o tempo acabar, a escolha é sorteada. Quem acertar a soma dos dados escolhe Vida ou Morte.</p>
       <div class="row2"><button class="btn vida" id="par">PAR</button><button class="btn morte" id="imp">ÍMPAR</button></div>`+leave;
+    return common+myHand()+sumBox+
+      `<p class="hint">🎲 <b>${esc(opp.name)}</b> foi sorteado para escolher Par ou Ímpar. Você ficará com a opção restante. Aguarde...</p>`+leave;
   }
   /* choose / result: tudo na mesma tela, dados no centro da mesa */
   const total=S.dice[0]+S.dice[1];
@@ -701,7 +726,12 @@ function gameHTML(S,i){
   const reason=`${esc(S.seats[S.win].name)} acertou o ${total%2===0?'par':'ímpar'} e escolheu ${rule}. `+(S.winner<0?'As somas são iguais.':`Somas: ${esc(S.seats[0].name)} ${sums[0]} x ${sums[1]} ${esc(S.seats[1].name)}.`);
   const banner=S.winner<0?`<div class="banner draw">Empate<small>${reason}</small></div>`
     :`<div class="banner win">${esc(S.seats[S.winner].name)} venceu!<small>${reason}</small></div>`;
-  return common+myHand()+sumBox+banner+leave;
+  const rm=S.rematch||[false,false];
+  let again;
+  if(opp.left||!opp.uid)again=`<p class="hint">${esc(opp.name)} saiu da mesa.</p>`;
+  else if(rm[i])again=`<button class="btn" disabled>Aguardando ${esc(opp.name)}...</button>`;
+  else again=(rm[1-i]?`<p class="hint"><b>${esc(opp.name)}</b> quer jogar novamente!</p>`:'')+`<button class="btn" id="again">🔁 Jogar novamente</button>`;
+  return common+myHand()+sumBox+banner+`<div id="rmbox">${again}</div>`+leave;
 }
 
 /* ============================================================
@@ -710,9 +740,9 @@ function gameHTML(S,i){
 const rectOf=el=>el?el.getBoundingClientRect():null;
 
 /* trava a renderização enquanto animações rodam (senão o innerHTML as destrói) */
-function lock(p){
+function lock(p,max){
   animLock++;document.body.classList.add('busy');
-  Promise.race([Promise.resolve(p).catch(()=>{}),sleep(5000)]).then(()=>{
+  Promise.race([Promise.resolve(p).catch(()=>{}),sleep(max||5000)]).then(()=>{
     animLock=Math.max(0,animLock-1);
     if(!animLock){document.body.classList.remove('busy');renderAll();}
   });
@@ -762,6 +792,21 @@ function outFlight(html,r,delay,flip){
   return a.finished.then(()=>{g.remove();Snd.sfx('place');setDisc(++discShown);bump();}).catch(()=>{g.remove();});
 }
 
+/* tela cheia de transição entre cenas (sub deve vir já escapado) */
+async function sceneCard(icon,title,sub,ms,cls,delay){
+  if(delay)await sleep(delay);
+  const d=document.createElement('div');d.className='scene '+(cls||'');
+  d.innerHTML=`<div class="sci">${icon}</div><div class="sc1">${esc(title)}</div><div class="sc2">${sub||''}</div>`;
+  document.body.appendChild(d);
+  Snd.sfx('phase');
+  return new Promise(res=>{
+    let fin=false;const done=()=>{if(fin)return;fin=true;d.remove();res();};
+    setTimeout(done,ms+400);
+    if(!d.animate){setTimeout(done,ms);return;}
+    const a=d.animate([{opacity:0},{opacity:1,offset:.14},{opacity:1,offset:.86},{opacity:0}],{duration:ms,easing:'ease-in-out'});
+    a.onfinish=done;a.oncancel=done;
+  });
+}
 function flashWord(t,cls){
   const d=document.createElement('div');d.className='fw '+(cls||'');d.textContent=t;document.body.appendChild(d);
   if(!d.animate){setTimeout(()=>d.remove(),900);return Promise.resolve();}
@@ -822,13 +867,17 @@ function animTrade(isMe,a,b,before){
 async function animResult(S,i){
   const banner=document.querySelector('.banner');
   if(banner){banner.style.animation='none';banner.style.opacity='0';}
+  const box=$('#rmbox');if(box)box.style.visibility='hidden';
   const os=$('#oppsum');if(os)os.textContent='0';
+  document.querySelectorAll('#opphand .slot').forEach(sl=>{const c=document.createElement('div');c.className='back';sl.appendChild(c);c.dataset.cv='1';});
+  await sceneCard('🂠','HORA DA VERDADE','Vamos revelar as cartas...',2000);
+  document.querySelectorAll('#opphand .slot .back[data-cv]').forEach(c=>c.remove());
   Snd.sfx(S.choice==='vida'?'vida':'morte');
   flashWord(S.choice==='vida'?'VIDA':'MORTE',S.choice==='vida'?'vida':'morte');
-  const t=1100;
-  document.querySelectorAll('#opphand .slot').forEach((sl,x)=>{flipIn(sl,460,t+x*110);setTimeout(()=>Snd.sfx('flip'),t+x*110+230);});
-  countUp(os,sumH(S.seats[1-i].hand),t+5*110+200,500);
-  await sleep(t+5*110+800);
+  const t=1500,gap=300;
+  document.querySelectorAll('#opphand .slot').forEach((sl,x)=>{flipIn(sl,700,t+x*gap);setTimeout(()=>Snd.sfx('flip'),t+x*gap+350);});
+  countUp(os,sumH(S.seats[1-i].hand),t+5*gap+300,800);
+  await sleep(t+5*gap+1300);
   if(banner){
     banner.style.opacity='';
     if(banner.animate)banner.animate([{transform:'scale(.6)',opacity:0},{transform:'scale(1.08)',opacity:1,offset:.6},{transform:'scale(1)',opacity:1}],{duration:450,easing:'ease-out'});
@@ -837,17 +886,22 @@ async function animResult(S,i){
   else if(S.winner===i){Snd.sfx('win');confetti();}
   else{Snd.sfx('lose');loseFx();}
   Snd.duck(3500);
-  await sleep(700);
+  await sleep(900);
+  if(box)box.style.visibility='';
 }
 
 /* dados: arremesso, números girando, aterrissagem e "Soma → PAR/ÍMPAR" */
 async function runDice(S){
   animating=true;
   try{
+    const me=mine?mine.seat:0,pk=pickerOf(S),pp=S.seats[pk].parity,op=S.seats[1-pk].parity;
+    const pn=pk===me?'Você':S.seats[pk].name;
+    const other=pk===me?esc(S.seats[1-pk].name)+' fica':'Você fica';
+    await sceneCard('🎲',`${pn} escolheu ${pp==='par'?'PAR':'ÍMPAR'}`,`${other} com ${op==='par'?'PAR':'ÍMPAR'}.<br>Hora de rolar os dados!`,2000);
     const wr=[...document.querySelectorAll('#dice .dw')],cap=$('#dcap');
     Snd.sfx('dice');
     wr.forEach((w,k)=>w.animate([{transform:`translate(${k?150:-150}px,-140px) rotate(${k?560:-560}deg) scale(.5)`,opacity:0},{transform:'translate(0,0) rotate(0deg) scale(1)',opacity:1}],{duration:950,delay:k*140,easing:'cubic-bezier(.2,.9,.3,1.3)',fill:'backwards'}));
-    for(const dl of [55,55,55,60,65,75,90,110,140,180,230,300,380]){
+    for(const dl of [60,60,60,65,70,80,95,115,140,170,210,260,320,400,500,620]){
       if(!wr[0]||!wr[0].isConnected)break;
       wr.forEach(w=>{w.innerHTML=dieHTML(rnd6(),true);});
       await sleep(dl);
@@ -859,7 +913,11 @@ async function runDice(S){
       cap.innerHTML=`Soma <b>${tot}</b> → <b>${tot%2===0?'PAR':'ÍMPAR'}</b>`;
       cap.animate([{transform:'scale(.6)',opacity:0},{transform:'scale(1.1)',opacity:1,offset:.6},{transform:'scale(1)'}],{duration:420,easing:'ease-out'});
     }
-    await sleep(1100);
+    await sleep(1600);
+    if(S.phase==='choose'){
+      const meSeat=mine?mine.seat:0;
+      await sceneCard('⚖️','VIDA OU MORTE',S.win===meSeat?'Você acertou!<br>A decisão é sua.':`${esc(S.seats[S.win].name)} acertou<br>e vai decidir.`,2400,'vm');
+    }
   }finally{animDone=S.rollAt;animating=false;lastKey='';renderAll();}
 }
 
@@ -867,7 +925,7 @@ async function runDice(S){
 function transition(p,S,i,before){
   const tasks=[];
   discShown=S.seats[0].traded+S.seats[1].traded;
-  const fresh=!p||p.status==='open';
+  const fresh=!p||p.status==='open'||p.status==='finished'||p.status==='abandoned';
   if(!p&&S.status==='open')Snd.sfx('sit');
   if(S.status==='playing'&&fresh&&S.turn===1&&S.phase==='trade'&&S.seats.every(s=>!s.acted&&!s.traded)){
     Snd.sfx('start');tasks.push(animDeal());
@@ -878,12 +936,15 @@ function transition(p,S,i,before){
       else if(k!==i&&b.acted&&!a.acted)Snd.sfx('blip');
     }
     if(S.turn>p.turn&&S.phase==='trade'){flashWord('TURNO '+S.turn,'turn');Snd.sfx('turn');}
-    if(S.phase==='parity'&&p.phase==='trade'){flashWord('PAR OU ÍMPAR?','par');Snd.sfx('phase');}
+    if(S.phase==='parity'&&p.phase==='trade'){
+      const pk=pickerOf(S);
+      sceneCard('🎲','PAR OU ÍMPAR',pk===i?'<b>Você</b> foi sorteado<br>para escolher.':`<b>${esc(S.seats[pk].name)}</b> foi sorteado<br>para escolher.`,2600,'',tasks.length?1100:300);
+    }
   }
   if(p&&p.status==='playing'&&S.status==='finished')tasks.push(animResult(S,i));
   if(p&&p.status==='playing'&&S.status==='abandoned'){Snd.sfx('win');Snd.duck(2500);}
   setDisc(discShown);
-  if(tasks.length)lock(Promise.all(tasks));
+  if(tasks.length)lock(Promise.all(tasks),(p&&p.status==='playing'&&S.status==='finished')?14000:5000);
 }
 const musicFor=S=>(S&&S.status==='playing')?((S.phase==='parity'||S.phase==='choose')?'tense':'game'):'calm';
 
@@ -933,9 +994,10 @@ function bindGame(S,i){
     leaveArm=false;leaveTable();
   };
   if($('#dice')&&!animating&&S.rollAt&&animDone!==S.rollAt)runDice(S);
+  const ag=$('#again');if(ag)ag.onclick=()=>playAgain(i);
   if(S.status!=='playing')return;
   if(S.phase==='trade'&&!S.seats[i].acted&&!S.seats[i].done)bindTrade(S,i);
-  if(S.phase==='parity'){$('#par').onclick=()=>pickParity(i,'par');$('#imp').onclick=()=>pickParity(i,'impar');}
+  if(S.phase==='parity'&&pickerOf(S)===i&&$('#par')){$('#par').onclick=()=>pickParity(i,'par');$('#imp').onclick=()=>pickParity(i,'impar');}
   if(S.phase==='choose'&&S.win===i&&$('#v')){$('#v').onclick=()=>pickChoice('vida');$('#m').onclick=()=>pickChoice('morte');}
 }
 
