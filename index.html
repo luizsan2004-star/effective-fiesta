@@ -451,7 +451,7 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
 .slot.locked .card{box-shadow:var(--glowR)}   /* carta revelada: brilho vermelho claro que some para fora */
 .hand.pk .slot{cursor:pointer}
 .hand.pk .slot .back{box-shadow:var(--glowG)}
-.pzbtn{cursor:pointer;border:1px solid #ffffff44;background:#0006;color:var(--gold);font:inherit;font-weight:600}
+.pzbtn{cursor:pointer;border:1px solid #ffffff44;background:#0006;color:var(--gold);font:inherit;font-weight:700;order:99;margin-left:auto;flex:0 0 auto;width:42px;padding-left:0;padding-right:0;text-align:center;letter-spacing:0}
 body.dealhold #hand .slot:not(.dealt),body.dealhold #opphand .slot:not(.dealt){visibility:hidden}
 .acebtn{margin-left:8px;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--gold);background:#0007;color:var(--gold);cursor:pointer}
 
@@ -1193,19 +1193,21 @@ function planRoll(S,sz){
   return {d,col};
 }
 
-function drawFrame(plan,p,sz,shadows){
+function drawFrame(plan,p,sz,shadows,ov){
   const W=innerWidth,H=innerHeight;
   gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   plan.d.forEach((d,k)=>{
-    const [x,y]=sample(d.xy,p),[z,rx,ry,f]=sample(d.cube,p);
-    const M=mul(mul(mul(mul(RX(d.tilt[0]*f),RY(d.tilt[1]*f)),RZ(d.tilt[2])),RX(rx)),RY(ry));
+    let [x,y]=sample(d.xy,p);const [z,rx,ry,f]=sample(d.cube,p);
+    const S1=ov?ov.s[k]:1;if(ov){x=ov.pos[k][0];y=ov.pos[k][1];}
+    let M=mul(mul(mul(mul(RX(d.tilt[0]*f),RY(d.tilt[1]*f)),RZ(d.tilt[2])),RX(rx)),RY(ry));
+    if(ov)M=M.map(v=>v*S1);   /* encolhe o dado até o tamanho do dado da mesa */
     gl.uniformMatrix3fv(loc.uR,false,colMajor(M));
     gl.uniform3f(loc.uT,x,y-z*.5,z);
     gl.drawElements(gl.TRIANGLES,meshN,gl.UNSIGNED_SHORT,0);
     /* sombra no chão: encolhe e some quando o dado está no ar */
     const e=shadows[k],sc=1.05-z/330;
-    e.style.width=sz+'px';e.style.height=sz*.5+'px';
-    e.style.transform=`translate(${W/2+x-sz/2}px,${H/2+y+sz*.12}px) scale(${sc})`;
+    e.style.width=sz*S1+'px';e.style.height=sz*.5*S1+'px';
+    e.style.transform=`translate(${W/2+x-sz*S1/2}px,${H/2+y+sz*.12*S1}px) scale(${sc})`;
     e.style.opacity=Math.max(.12,.6-z/400);
   });
 }
@@ -1228,6 +1230,17 @@ async function play(S,box,cb){
     const tick=now=>{const p=Math.min(1,(now-t0)/RD);drawFrame(plan,p,sz,sh);if(p<1)requestAnimationFrame(tick);else res();};
     requestAnimationFrame(tick);
   });
+  /* depois de rolar, os mesmos dados deslizam até o lugar deles na mesa (sem transição) */
+  return {slide:(tg,ms)=>new Promise(res=>{
+    const from=plan.d.map(d=>d.xy[d.xy.length-1].v),to=tg.map(t=>[t.cx-W/2,t.cy-H/2]),sc=tg.map(t=>t.size/sz);
+    const t0=performance.now(),ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+    const tick=now=>{
+      const q=Math.min(1,(now-t0)/ms),e=ease(q);
+      drawFrame(plan,1,sz,sh,{pos:from.map((f,k)=>[f[0]+(to[k][0]-f[0])*e,f[1]+(to[k][1]-f[1])*e]),s:sc.map(c=>1+(c-1)*e)});
+      if(q<1)requestAnimationFrame(tick);else res();
+    };
+    requestAnimationFrame(tick);
+  })};
 }
 return {play};
 })();
@@ -1977,7 +1990,7 @@ function gameHTML(S,i){
   const k=TABLE_IDS.indexOf(S.id)+1;
   const inTrade=S.status==='playing'&&S.phase==='trade';
   const timed=S.status==='playing'&&(S.phase==='trade'||S.phase==='parity'||S.phase==='choose');
-  const bar=`<div class="topbar"><span class="pill">${isPriv(S.id)?'Privada':'Mesa '+k}${inTrade?' · Turno '+S.turn+' de 3':''}${getRules(S).series>1?' · Rodada '+(S.round||1)+'/'+getRules(S).series+' ('+S.wins[0]+'x'+S.wins[1]+')':''}</span><span class="pill">${esc(me.name)}</span>${timed?'<span class="pill timer" id="tm"></span>':''}${(S.status==='playing'&&S.seats.some(x=>isBotDev(x.dev)))?`<button type="button" class="pill pzbtn" id="pz">${S.pz?'▶ Retomar':'⏸ Pausar'}</button>`:''}</div>`+(timed?`<div class="tbar" id="tbar"><i id="tbf"></i></div>`:'');
+  const bar=`<div class="topbar"><span class="pill">${isPriv(S.id)?'Privada':'Mesa '+k}${inTrade?' · Turno '+S.turn+' de 3':''}${getRules(S).series>1?' · Rodada '+(S.round||1)+'/'+getRules(S).series+' ('+S.wins[0]+'x'+S.wins[1]+')':''}</span><span class="pill">${esc(me.name)}</span>${timed?'<span class="pill timer" id="tm"></span>':''}${(S.status==='playing'&&S.seats.some(x=>isBotDev(x.dev)))?`<button type="button" class="pill pzbtn" id="pz">${S.pz?'▶\uFE0E':'❚❚'}</button>`:''}</div>`+(timed?`<div class="tbar" id="tbar"><i id="tbf"></i></div>`:'');
   const leave=`<button class="btn ghost leave" id="leave">${S.status==='playing'?'Abandonar partida':((S.status==='open'||S.status==='starting')?'Sair da mesa':'Voltar ao lobby')}</button>`;
   const G=(top,mid,bot)=>`<div class="gm"><div class="gtop">${top}</div><div class="gmid">${mid||''}</div><div class="gbot">${bot||''}</div></div>`;
   const ev=(!holdP&&!rolling&&S.events&&S.events.length)?`<div class="events">${S.events.slice(-1).map(esc).join('')}</div>`:'';
@@ -2186,11 +2199,28 @@ function countUp(el,to,delay,dur){
 }
 
 /* distribuição inicial: 10 cartas do baralho para as duas mãos */
-function animDeal(){
+/* revanche: as cartas do descarte deslizam até o monte antes de serem distribuídas de novo */
+function animDiscToDeck(n){
+  const d=$('#disc'),k=$('#deck');
+  if(!d||!k||!d.animate||!n)return {ms:0,done:Promise.resolve()};
+  const a=d.getBoundingClientRect(),b=k.getBoundingClientRect(),c=Math.min(n,12),jobs=[];
+  for(let x=0;x<c;x++){
+    const g=document.createElement('div');g.className='flyc';
+    g.style.cssText=`left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px`;
+    g.innerHTML='<div class="gslot"><div class="back"></div></div>';document.body.appendChild(g);
+    const dx=b.left+b.width/2-(a.left+a.width/2),dy=b.top+b.height/2-(a.top+a.height/2),rot=(Math.random()-.5)*24;
+    const an=g.animate([{transform:'none'},{transform:`translate(${dx*.5}px,${dy*.5-18}px) rotate(${rot}deg)`,offset:.5},{transform:`translate(${dx}px,${dy}px) rotate(0deg)`}],{duration:760,delay:x*85,easing:'cubic-bezier(.45,.05,.35,1)',fill:'both'});
+    setTimeout(()=>Snd.sfx('deal'),x*85);
+    const rm=()=>g.remove();jobs.push(an.finished.then(rm).catch(rm));
+  }
+  return {ms:c*85+760,done:Promise.all(jobs)};
+}
+function animDeal(base){
+  base=base||0;
   const deckR=rectOf($('#deck')),jobs=[];let n=0;
   const mineEls=[...document.querySelectorAll('#hand .slot')],oppEls=[...document.querySelectorAll('#opphand .slot')];
   for(let k=0;k<Math.max(mineEls.length,oppEls.length);k++){
-    [oppEls[k],mineEls[k]].forEach((el,w)=>{if(el)jobs.push(flyIn(el,deckR,{delay:n*Math.min(180,2000/(2*Math.max(mineEls.length,oppEls.length))),dur:850,face:w===1}));n++;});
+    [oppEls[k],mineEls[k]].forEach((el,w)=>{if(el)jobs.push(flyIn(el,deckR,{delay:base+n*Math.min(180,2000/(2*Math.max(mineEls.length,oppEls.length))),dur:850,face:w===1}));n++;});
   }
   return Promise.all(jobs);
 }
@@ -2299,19 +2329,24 @@ async function runDice(S){
     if(o.animate)o.animate([{opacity:0},{opacity:1}],{duration:600,fill:'both'});
     Snd.sfx('dice');
     setTimeout(()=>Snd.sfx('dice'),1300);
-    await DiceGL.play(S,box,{beat:()=>Snd.sfx('place'),hit:()=>Snd.sfx('diceLand')});
+    const dh=await DiceGL.play(S,box,{beat:()=>Snd.sfx('place'),hit:()=>Snd.sfx('diceLand')});
     Snd.sfx('diceLand');
     bt.innerHTML=`<div style="font-size:.95rem;opacity:.85;letter-spacing:.08em">Soma ${tot}</div><b style="font-size:2.4rem;letter-spacing:.12em">${lbl}</b>`;bt.style.opacity='1';
     if(bt.animate)bt.animate([{transform:'scale(.6)',opacity:0},{transform:'scale(1.1)',opacity:1,offset:.6},{transform:'scale(1)',opacity:1}],{duration:420,easing:'ease-out'});
     await sleep(1800);
-    /* os dados grandes somem aos poucos e os da mesa aparecem aos poucos */
+    /* os dados rolados deslizam até o lugar dos dados da mesa; o fundo escuro e o texto saem junto */
     const FD=900;
-    if(box.animate)box.animate([{opacity:1},{opacity:0}],{duration:FD,fill:'both'});
     if(bt.animate)bt.animate([{opacity:1},{opacity:0}],{duration:FD,fill:'both'});
     if(o.animate)o.animate([{opacity:1},{opacity:0}],{duration:FD,fill:'both'});
-    wr.forEach(w=>{if(w.animate)w.animate([{opacity:0},{opacity:1}],{duration:FD,fill:'both'});w.style.opacity='';});
     if(cap&&cap.animate)cap.animate([{opacity:0},{opacity:1}],{duration:FD});
-    await sleep(FD+50);
+    if(dh&&dh.slide){
+      const tg=wr.map(w=>{const dd=w.querySelector('.die')||w,r=dd.getBoundingClientRect();return {cx:r.left+r.width/2,cy:r.top+r.height/2,size:r.width};});
+      await dh.slide(tg,FD);
+    }else{
+      if(box.animate)box.animate([{opacity:1},{opacity:0}],{duration:FD,fill:'both'});
+      await sleep(FD);
+    }
+    wr.forEach(w=>{w.style.opacity='';});   /* o dado da mesa já está exatamente embaixo: troca invisível */
     o.remove();box.remove();bt.remove();
     await sleep(500);
     if(S.phase==='choose'){
@@ -2324,11 +2359,14 @@ async function runDice(S){
 /* decide quais animações tocar comparando o estado anterior com o novo */
 function transition(p,S,i,before){
   const tasks=[];
+  const prevDisc=discShown;
   discShown=S.seats[0].traded+S.seats[1].traded;
   const fresh=!p||p.status==='open'||p.status==='starting'||p.status==='finished'||p.status==='abandoned';
   if(!p&&S.status==='open')Snd.sfx('sit');
   if(!holdDeal&&S.status==='playing'&&fresh&&S.turn===1&&S.phase==='trade'&&S.seats.every(s=>!s.acted&&!s.traded)){
-    Snd.sfx('start');tasks.push(animDeal());
+    let base=0;
+    if(p&&p.status==='finished'&&prevDisc>0){const sw=animDiscToDeck(prevDisc);base=sw.ms;tasks.push(sw.done);}   /* descarte volta ao monte */
+    Snd.sfx('start');tasks.push(animDeal(base));
   }else if(p&&p.status==='playing'&&S.status==='playing'){
     for(const k of [i,1-i]){
       const a=p.seats[k],b=S.seats[k];
@@ -2344,7 +2382,7 @@ function transition(p,S,i,before){
   if(p&&p.status==='playing'&&S.status==='finished')tasks.push(animResult(S,i));
   if(p&&p.status==='playing'&&S.status==='abandoned'){Snd.sfx('win');Snd.duck(2500);}
   setDisc(discShown);
-  if(tasks.length)lock(Promise.all(tasks),(p&&p.status==='playing'&&S.status==='finished')?24000:5000);
+  if(tasks.length)lock(Promise.all(tasks),(p&&p.status==='playing'&&S.status==='finished')?24000:8000);
 }
 const musicFor=S=>(S&&S.status==='playing')?((S.phase==='parity'||S.phase==='choose')?'tense':'game'):'calm';
 
@@ -2563,7 +2601,7 @@ function paintTimerNow(){
   const total=(S.phase==='trade'?getRules(S).tms:15),hold=S.prop||S.refund||S.pz,ms=S.deadline-(hold?hold.ts:Date.now());
   const left=Math.min(total,Math.ceil(ms/1000)),low=left<=(S.phase==='trade'?10:5);
   const el=$('#tm'),bf=$('#tbf'),tb=$('#tbar');
-  if(el){el.textContent=(hold?'Pausado · ':'')+Math.max(0,left)+'s';el.classList.toggle('low',low);}
+  if(el){el.textContent=(hold&&!S.pz?'Pausado · ':'')+Math.max(0,left)+'s';el.classList.toggle('low',low);}
   if(bf){bf.style.transition='none';bf.style.width=Math.max(0,Math.min(100,ms/(total*10)))+'%';void bf.offsetWidth;bf.style.transition='';}
   if(tb)tb.classList.toggle('low',low);
 }
@@ -2592,7 +2630,7 @@ setInterval(()=>{
   const left=Math.min(total,Math.ceil(ms/1000));
   const low=left<=(S.phase==='trade'?10:5);
   const el=$('#tm'),bf=$('#tbf'),tb=$('#tbar');
-  if(el){el.textContent=(hold?'Pausado · ':'')+Math.max(0,left)+'s';el.classList.toggle('low',low);}
+  if(el){el.textContent=(hold&&!S.pz?'Pausado · ':'')+Math.max(0,left)+'s';el.classList.toggle('low',low);}
   if(bf)bf.style.width=Math.max(0,Math.min(100,ms/(total*10)))+'%';
   if(tb)tb.classList.toggle('low',low);
   const key=S.id+':'+S.turn+':'+S.phase+':'+S.deadline;
