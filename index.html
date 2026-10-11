@@ -367,6 +367,32 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
   .sb:hover,.chips button:hover,.wtabs button:hover{filter:brightness(1.2)}
   .wal:hover{filter:brightness(1.12)}
 }
+/* ===== ajuste ao tamanho da janela: nada fica um em cima do outro ===== */
+.gm{flex:1 0 auto;min-height:min-content}
+.gmid{flex:1 0 auto;min-height:auto}
+.gm .hand .slot{max-width:clamp(48px,10.5vh,96px);max-width:clamp(48px,10.5dvh,96px)}
+.gm .hand.mini5 .slot{max-width:clamp(26px,5.2vh,46px);max-width:clamp(26px,5.2dvh,46px)}
+.gm .hand.mini5.rev .slot{max-width:clamp(30px,5.8vh,52px);max-width:clamp(30px,5.8dvh,52px)}
+.gm .stack{width:clamp(26px,5.2vh,44px);width:clamp(26px,5.2dvh,44px)}
+.gm .felt .die{width:clamp(34px,6vh,52px);height:clamp(34px,6vh,52px);width:clamp(34px,6dvh,52px);height:clamp(34px,6dvh,52px)}
+.topbar,.who,.betrow,.chips{flex-wrap:wrap}
+.row2>*,.lgrid>*{min-width:0}
+.btn{overflow-wrap:anywhere}
+.rbox,.bbox{max-height:92vh;max-height:92dvh;overflow-y:auto}
+@media (max-width:340px){.lgrid{grid-template-columns:1fr}}
+@media (min-width:720px){
+  .gm .hand .slot{max-width:clamp(52px,13vh,128px);max-width:clamp(52px,13dvh,128px)}
+  .gm .hand.mini5 .slot{max-width:clamp(30px,6.4vh,60px);max-width:clamp(30px,6.4dvh,60px)}
+  .gm .hand.mini5.rev .slot{max-width:clamp(34px,7.2vh,68px);max-width:clamp(34px,7.2dvh,68px)}
+  .gm .stack{width:clamp(30px,6.4vh,56px);width:clamp(30px,6.4dvh,56px)}
+  .gm .felt .die{width:clamp(38px,7.4vh,64px);height:clamp(38px,7.4vh,64px);width:clamp(38px,7.4dvh,64px);height:clamp(38px,7.4dvh,64px)}
+}
+/* janela muito baixa: a página inteira rola em vez de espremer os botões */
+@media (max-height:560px){
+  html,body{height:auto;overflow-y:auto}
+  #app{height:auto;min-height:100vh;min-height:100dvh}
+  #view{overflow:visible;flex:1 0 auto}
+}
 </style>
 </head>
 <body>
