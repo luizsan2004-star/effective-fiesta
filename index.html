@@ -451,6 +451,23 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
 .slot.locked .card{box-shadow:var(--glowR)}   /* carta revelada: brilho vermelho claro que some para fora */
 .hand.pk .slot{cursor:pointer}
 .hand.pk .slot .back{box-shadow:var(--glowG)}
+.upview{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;cursor:pointer}
+.upcap{display:flex;gap:10px}
+.upcap .lg{font-size:.8rem;font-weight:700;padding:4px 12px;border-radius:99px;background:#0008;border:1px solid currentColor}
+.upcap .lg.me{color:#e8c35a;box-shadow:0 0 10px #e8c35a66}.upcap .lg.op{color:#ff8d97;box-shadow:0 0 10px #ff8d9766}
+.upgrid{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:520px;max-height:68vh;max-height:68dvh;overflow:auto;padding:14px}
+.upc{width:clamp(54px,18vw,84px);aspect-ratio:5/7;position:relative;container-type:inline-size;animation:upin .35s ease both}
+.upc .gslot{animation:upfl 3.2s ease-in-out var(--d,0s) infinite alternate}
+.upc.me .card{box-shadow:var(--glowG)}.upc.op .card{box-shadow:var(--glowR)}
+@keyframes upin{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+@keyframes upfl{from{transform:translateY(-7px) rotate(var(--a,2deg))}to{transform:translateY(7px) rotate(calc(var(--a,2deg)*-1))}}
+.uphint{font-size:.78rem;color:#ffffffaa}
+#disc,#upstrip{cursor:pointer}
+.dmode{display:flex;gap:3px;margin-top:5px;justify-content:center}
+.dmode button{font-family:inherit;font-size:.62rem;font-weight:600;padding:3px 7px;border-radius:99px;border:1px solid #ffffff44;background:#0006;color:var(--ink);cursor:pointer}
+.dmode button.on{background:var(--gold);color:#2a1d00;border-color:var(--gold)}
+.upstrip{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;max-width:96px;min-height:0;margin-top:3px}
+.upstrip .mc{display:block;width:21px;aspect-ratio:5/7;position:relative;container-type:inline-size;border-radius:3px}
 .pzbtn{cursor:pointer;border:1px solid #ffffff44;background:#0006;color:var(--gold);font:inherit;font-weight:700;order:99;margin-left:auto;flex:0 0 auto;width:42px;padding-left:0;padding-right:0;text-align:center;letter-spacing:0}
 body.dealhold #hand .slot:not(.dealt),body.dealhold #opphand .slot:not(.dealt){visibility:hidden}
 .acebtn{margin-left:8px;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--gold);background:#0007;color:var(--gold);cursor:pointer}
@@ -1288,7 +1305,7 @@ const backs=(sl,S,k)=>{const n=S?S.seats[k].hand.length:5,rl=S?getRules(S):DRL,r
 const badge=p=>`<span class="badge ${p==='par'?'v':'m'}">${p==='par'?'PAR':'ÍMPAR'}</span>`;
 
 const emptySeat=()=>({uid:null,name:'',hand:[],traded:0,done:false,lastNew:[],parity:null,left:false,acted:false,dev:'',since:0,ace:1});
-const freshTable=id=>({id,v:0,ts:Date.now(),status:'open',seats:[emptySeat(),emptySeat()],deck:[],turn:1,cur:0,phase:'lobby',deadline:0,dice:[0,0],rollAt:0,win:-1,choice:'',winner:-1,abandoned:-1,picker:-1,rematch:[false,false],sel0:[],sel1:[],events:[],bet:BASE_BET[id]||50,stake:0,prop:null,payout:null,refund:null,startAt:0,pz:null,rv:[-1,-1],rules:null,wins:[0,0],round:1,carry:0,sn:false,fm:''});
+const freshTable=id=>({id,v:0,ts:Date.now(),status:'open',seats:[emptySeat(),emptySeat()],deck:[],turn:1,cur:0,phase:'lobby',deadline:0,dice:[0,0],rollAt:0,win:-1,choice:'',winner:-1,abandoned:-1,picker:-1,rematch:[false,false],sel0:[],sel1:[],events:[],bet:BASE_BET[id]||50,stake:0,prop:null,payout:null,refund:null,startAt:0,pz:null,disc:[],rv:[-1,-1],rules:null,wins:[0,0],round:1,carry:0,sn:false,fm:''});
 const pickerOf=S=>(S.picker===0||S.picker===1)?S.picker:0;
 const clone=o=>JSON.parse(JSON.stringify(o));
 function pushEv(S,t){S.events.push(t);if(S.events.length>4)S.events=S.events.slice(-4);}
@@ -1313,7 +1330,7 @@ function dealInto(S,W){
   {const rr=getRules(S),rnd=()=>Math.floor(Math.random()*n);S.rv=(rr.reveal&&(rr.reveal!=='pick'||rr.maxT===0))?[rnd(),rnd()]:[-1,-1];}   /* carta revelada (e travada) de cada jogador */
   S.seats.forEach(s=>{s.traded=0;s.done=false;s.lastNew=[];s.parity=null;s.ace=1;});
   S.dice=[0,0];S.rollAt=0;S.win=-1;S.choice='';S.winner=-1;S.abandoned=-1;S.picker=-1;S.rematch=[false,false];S.sel0=[];S.sel1=[];
-  S.bet=S.bet||BASE_BET[S.id]||50;S.pz=null;S.prop=null;S.payout=null;S.refund=null;S.startAt=0;S.fm='';
+  S.bet=S.bet||BASE_BET[S.id]||50;S.pz=null;S.disc=[];S.prop=null;S.payout=null;S.refund=null;S.startAt=0;S.fm='';
   if(S.sn){S.round=(S.round||1)+1;S.sn=false;}   /* próxima rodada da série: a aposta já está no pote */
   else{S.wins=[0,0];S.round=1;S.stake=S.bet;S.seats.forEach(x=>{if(W&&x.dev)W[x.dev]=(W[x.dev]||0)-S.stake;});}   /* cada um coloca a aposta no pote */
   S.status='playing';S.turn=1;S.cur=0;S.events=[(S.round>1?'Rodada '+S.round+' de '+getRules(S).series+'. ':'A partida começou! ')+'Pote de '+(S.stake*2+(S.carry||0))+' moedas. Turnos de '+getRules(S).tms+'s; Par/Ímpar e Vida/Morte: 15s.'+(rulesTxt(S)&&S.round<2?' Regras: '+rulesTxt(S)+'.':'')];
@@ -1327,6 +1344,7 @@ let prev=null,animLock=0,localOut=false,discShown=0,lastView='',holdParity=0,sel
 let DEV='',ctxErr='',betMode='',betKey='',beatKey='',presOK=false,sweeping=false,leaving=false,pres={};
 const wallet={ok:false,coins:0,err:'',zeroAt:0,blocked:false,frozen:false,blockMsg:'',adm:false,gone:false};
 let granting=false;
+let discUp=false;   /* descarte virado para cima (mostrar) na jogada atual */
 let holdDeal=false,lobbyTab='pub',myInv=null,invs=[],invKey='',invIdLast='',flT=null,creating=false;
 let USER='',loggingIn=false,savingAcct=false,savingUser=false,giving=false,hist=[],histFirst=true,histUnsub=null;
 
@@ -1609,17 +1627,18 @@ async function leaveTable(){
 }
 
 /* ---------- ações de jogo ---------- */
-function doTrade(i,idx){
+function doTrade(i,idx,up){
   return commit(S=>{
     const p=S.seats[i];
     if(S.status!=='playing'||S.phase!=='trade'||p.acted||p.done)return false;
     if(idx.length<1||idx.length>maxTrade(S,i))return false;
     if(idx.includes(rvOf(S)[i]))return false;   /* carta revelada não pode ser trocada */
     if(getRules(S).reveal==='pick'&&(rvOf(S)[0]<0||rvOf(S)[1]<0))return false;
-    idx.forEach(k=>{p.hand[k]=S.deck.pop();});
+    if(!S.disc)S.disc=[];
+    idx.forEach(k=>{S.disc.push(up?{u:1,c:p.hand[k],s:i}:{u:0,s:i});p.hand[k]=S.deck.pop();});
     p.traded+=idx.length;p.lastNew=idx;p.acted=true;S['sel'+i]=[];
     if(S.turn===3||p.traded>=getRules(S).maxT)p.done=true;
-    pushEv(S,`${p.name} trocou ${idx.length} carta${idx.length>1?'s':''}`);
+    pushEv(S,`${p.name} trocou ${idx.length} carta${idx.length>1?'s':''}${up?' (mostradas)':''}`);
     afterActionS(S);
   });
 }
@@ -1948,26 +1967,39 @@ function lobbyHTML(){
 }
 
 /* mesa: baralho + descarte */
-function discHTML(n){
-  let h='';const m=Math.min(n,9);
-  for(let k=0;k<m;k++)h+=`<div class="dcard" style="transform:translate(${((k*7)%9)-4}px,${((k*5)%7)-3}px) rotate(${((k*37)%27)-13}deg)"><div class="back"></div></div>`;
+function discHTML(n,D){
+  let h='';const m=Math.min(n,9);D=D||[];
+  for(let k=n-m;k<n;k++){
+    const e=D[k],j=k-(n-m);
+    h+=`<div class="dcard" style="transform:translate(${((j*7)%9)-4}px,${((j*5)%7)-3}px) rotate(${((j*37)%27)-13}deg)">${(e&&e.u)?`<div class="gslot">${cardHTML(cardOf(e.c))}</div>`:'<div class="back"></div>'}</div>`;
+  }
   return h;
+}
+/* cartas descartadas viradas para cima (visíveis para os dois) */
+function upHTML(n,D){
+  return (D||[]).slice(0,n).filter(e=>e&&e.u).slice(-8).map(e=>`<span class="mc">${cardHTML(cardOf(e.c))}</span>`).join('');
 }
 function setDisc(n){
   n=Math.max(0,n);
-  const d=$('#disc');if(d)d.innerHTML=discHTML(n);
+  const S0=mine&&tables[mine.tid],D=(S0&&S0.disc)||[];
+  const d=$('#disc');if(d)d.innerHTML=discHTML(n,D);
+  const us=$('#upstrip');if(us)us.innerHTML=upHTML(n,D);
   const l=$('#disclab');if(l)l.textContent='Descarte · '+n;
 }
 const bump=()=>{const d=$('#disc');if(d&&d.animate)d.animate([{transform:'scale(1.14)'},{transform:'scale(1)'}],{duration:180});};
 const isRolling=S=>(S.phase==='choose'||S.phase==='result')&&S.rollAt&&animDone!==S.rollAt&&Date.now()-S.rollAt<=ROLL_MS+600;
-function feltHTML(S){
+function feltHTML(S,i){
   const tot=S.seats[0].traded+S.seats[1].traded;
+  /* aba do descarte: descartar (virada para baixo) ou mostrar (virada para cima) */
+  const me0=(i===0||i===1)?S.seats[i]:null;
+  const dm=(me0&&S.status==='playing'&&S.phase==='trade'&&!me0.acted&&!me0.done&&!(getRules(S).reveal==='pick'&&S.turn===1&&(rvOf(S)[0]<0||rvOf(S)[1]<0)))
+    ?`<div class="dmode" id="dmode"><button type="button" data-up="0" class="${discUp?'':'on'}">Descartar</button><button type="button" data-up="1" class="${discUp?'on':''}">Mostrar</button></div>`:'';
   const mid=((S.phase==='choose'||S.phase==='result')&&S.rollAt)
     ?`<div class="midw"><div class="mid">♠♥♦♣</div><div class="mid dr" id="dice">${isRolling(S)?`<div class="dw" style="opacity:0">${dieHTML(S.dice[0])}</div><div class="dw" style="opacity:0">${dieHTML(S.dice[1])}</div>`:`<div class="dw">${dieHTML(S.dice[0])}</div><div class="dw">${dieHTML(S.dice[1])}</div>`}</div></div>`
     :`<div class="mid">♠♥♦♣</div>`;
   return `<div class="felt"><div class="pilebox"><div class="stack" id="deck"><div class="dcard" style="transform:translate(-2px,-2px)"><div class="back"></div></div><div class="dcard" style="transform:translate(-1px,-1px)"><div class="back"></div></div><div class="dcard"><div class="back"></div></div></div><small>Baralho · ${S.deck.length}</small></div>
     ${mid}
-    <div class="pilebox"><div class="stack" id="disc">${discHTML(tot)}</div><small id="disclab">Descarte · ${tot}</small></div></div>`;
+    <div class="pilebox"><div class="stack" id="disc">${discHTML(tot,S.disc)}</div><small id="disclab">Descarte · ${tot}</small><div class="upstrip" id="upstrip">${upHTML(tot,S.disc)}</div>${dm}</div></div>`;
 }
 
 function privWaitHTML(S,i){
@@ -2006,7 +2038,7 @@ function gameHTML(S,i){
   const oppSel=(S.phase==='trade'&&!opp.acted)?(S['sel'+(1-i)]||[]):[];
   const oppPanel=`<div class="panel${reveal?' mini':''}"><div class="who"><b>${esc(opp.name)}${reveal&&S.winner===1-i?'':''}</b><span>${showPar&&opp.parity?badge(opp.parity):''}${chip(1-i)}</span></div>${reveal?handStatic(opp.hand,null,'opphand','mini5 rev')+`<div class="sum"><span>Soma</span><b id="oppsum">${seatSum(S,1-i)}</b></div>`:backs(oppSel,S,1-i)}</div>`;
   const sumBox=`<div class="sum"><span>Sua soma</span>${showPar&&me.parity?badge(me.parity):''}${chip(i)}<b id="mysum">${seatSum(S,i)}</b>${CR.ace==='pick'&&S.status==='playing'&&(S.phase==='trade'||S.phase==='parity')?`<button class="acebtn" id="ace">Ás vale ${me.ace===11?11:1}</button>`:''}</div>`;
-  const top=bar+betRowHTML(S,i)+oppPanel+feltHTML(S)+ev;
+  const top=bar+betRowHTML(S,i)+oppPanel+feltHTML(S,i)+ev;
   const myHand=nw=>handStatic(me.hand,nw||null,'hand');
 
   if(S.phase==='trade'){
@@ -2115,8 +2147,13 @@ function outFlight(html,r,delay,flip){
       const cover=document.createElement('div');cover.className='back';g.firstChild.appendChild(cover);
       [card,cover].forEach(x=>{x.style.backfaceVisibility='hidden';x.style.webkitBackfaceVisibility='hidden';});
       const P='perspective(650px) ',o2={duration:FLIP_MS+80,delay:delay+120,easing:'cubic-bezier(.4,.1,.3,1)',fill:'both'};
-      card.animate([{transform:P+'rotateY(0deg) scale(1)'},{transform:P+'rotateY(-90deg) scale(1.1)',offset:.5},{transform:P+'rotateY(-180deg) scale(1)'}],o2);
-      cover.animate([{transform:P+'rotateY(180deg) scale(1)'},{transform:P+'rotateY(90deg) scale(1.1)',offset:.5},{transform:P+'rotateY(0deg) scale(1)'}],o2);
+      if(flip==='up'){   /* sai de costas e vira, mostrando a carta */
+        card.animate([{transform:P+'rotateY(180deg) scale(1)'},{transform:P+'rotateY(90deg) scale(1.1)',offset:.5},{transform:P+'rotateY(0deg) scale(1)'}],o2);
+        cover.animate([{transform:P+'rotateY(0deg) scale(1)'},{transform:P+'rotateY(-90deg) scale(1.1)',offset:.5},{transform:P+'rotateY(-180deg) scale(1)'}],o2);
+      }else{
+        card.animate([{transform:P+'rotateY(0deg) scale(1)'},{transform:P+'rotateY(-90deg) scale(1.1)',offset:.5},{transform:P+'rotateY(-180deg) scale(1)'}],o2);
+        cover.animate([{transform:P+'rotateY(180deg) scale(1)'},{transform:P+'rotateY(90deg) scale(1.1)',offset:.5},{transform:P+'rotateY(0deg) scale(1)'}],o2);
+      }
     }
   }
   setTimeout(()=>Snd.sfx('deal'),delay);
@@ -2200,14 +2237,24 @@ function countUp(el,to,delay,dur){
 
 /* distribuição inicial: 10 cartas do baralho para as duas mãos */
 /* revanche: as cartas do descarte deslizam até o monte antes de serem distribuídas de novo */
-function animDiscToDeck(n){
+function animDiscToDeck(n,D){
   const d=$('#disc'),k=$('#deck');
   if(!d||!k||!d.animate||!n)return {ms:0,done:Promise.resolve()};
   const a=d.getBoundingClientRect(),b=k.getBoundingClientRect(),c=Math.min(n,12),jobs=[];
   for(let x=0;x<c;x++){
     const g=document.createElement('div');g.className='flyc';
     g.style.cssText=`left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px`;
-    g.innerHTML='<div class="gslot"><div class="back"></div></div>';document.body.appendChild(g);
+    const e=(D||[]).slice(-c)[x],up=!!(e&&e.u);
+    g.innerHTML=up?`<div class="gslot">${cardHTML(cardOf(e.c))}</div>`:'<div class="gslot"><div class="back"></div></div>';document.body.appendChild(g);
+    if(up){   /* carta virada para cima: vira de costas durante o caminho até o monte */
+      const card=g.querySelector('.card'),cover=document.createElement('div');cover.className='back';g.firstChild.appendChild(cover);
+      if(card&&card.animate){
+        [card,cover].forEach(q=>{q.style.backfaceVisibility='hidden';q.style.webkitBackfaceVisibility='hidden';});
+        const P='perspective(650px) ',o2={duration:520,delay:x*85+120,easing:'cubic-bezier(.4,.1,.3,1)',fill:'both'};
+        card.animate([{transform:P+'rotateY(0deg)'},{transform:P+'rotateY(-90deg) scale(1.1)',offset:.5},{transform:P+'rotateY(-180deg)'}],o2);
+        cover.animate([{transform:P+'rotateY(180deg)'},{transform:P+'rotateY(90deg) scale(1.1)',offset:.5},{transform:P+'rotateY(0deg)'}],o2);
+      }
+    }
     const dx=b.left+b.width/2-(a.left+a.width/2),dy=b.top+b.height/2-(a.top+a.height/2),rot=(Math.random()-.5)*24;
     const an=g.animate([{transform:'none'},{transform:`translate(${dx*.5}px,${dy*.5-18}px) rotate(${rot}deg)`,offset:.5},{transform:`translate(${dx}px,${dy}px) rotate(0deg)`}],{duration:760,delay:x*85,easing:'cubic-bezier(.45,.05,.35,1)',fill:'both'});
     setTimeout(()=>Snd.sfx('deal'),x*85);
@@ -2226,7 +2273,7 @@ function animDeal(base){
 }
 
 /* troca de cartas (minha ou do oponente): sai para o descarte, entra do baralho */
-function animTrade(isMe,a,b,before){
+function animTrade(isMe,a,b,before,S){
   const idx=b.lastNew,jobs=[],deckR=rectOf($('#deck'));
   const skipOut=isMe&&localOut;if(isMe)localOut=false;
   let inDelay=0;
@@ -2235,8 +2282,9 @@ function animTrade(isMe,a,b,before){
     const outs=idx.filter(x=>rects[x]);
     discShown-=outs.length;
     outs.forEach((x,k)=>{
-      const html=isMe?`<div class="gslot">${cardHTML(cardOf(a.hand[x]))}</div>`:`<div class="gslot"><div class="back"></div></div>`;
-      jobs.push(outFlight(html,rects[x],k*220,isMe));
+      const e=((S&&S.disc)||[]).slice(-idx.length)[idx.indexOf(x)],up=!!(e&&e.u);   /* descartada virada para cima? */
+      const html=isMe?`<div class="gslot">${cardHTML(cardOf(a.hand[x]))}</div>`:(up?`<div class="gslot">${cardHTML(cardOf(e.c))}</div>`:`<div class="gslot"><div class="back"></div></div>`);
+      jobs.push(outFlight(html,rects[x],k*220,isMe?!up:(up?'up':false)));
     });
     inDelay=outs.length?800:0;
   }else inDelay=450;
@@ -2365,12 +2413,12 @@ function transition(p,S,i,before){
   if(!p&&S.status==='open')Snd.sfx('sit');
   if(!holdDeal&&S.status==='playing'&&fresh&&S.turn===1&&S.phase==='trade'&&S.seats.every(s=>!s.acted&&!s.traded)){
     let base=0;
-    if(p&&p.status==='finished'&&prevDisc>0){const sw=animDiscToDeck(prevDisc);base=sw.ms;tasks.push(sw.done);}   /* descarte volta ao monte */
+    if(p&&p.status==='finished'&&prevDisc>0){const sw=animDiscToDeck(prevDisc,p.disc);base=sw.ms;tasks.push(sw.done);}   /* descarte volta ao monte */
     Snd.sfx('start');tasks.push(animDeal(base));
   }else if(p&&p.status==='playing'&&S.status==='playing'){
     for(const k of [i,1-i]){
       const a=p.seats[k],b=S.seats[k];
-      if(b.traded>a.traded&&b.lastNew&&b.lastNew.length)tasks.push(animTrade(k===i,a,b,before));
+      if(b.traded>a.traded&&b.lastNew&&b.lastNew.length)tasks.push(animTrade(k===i,a,b,before,S));
       else if(k!==i&&b.acted&&!a.acted)Snd.sfx('blip');
     }
     if(S.turn>p.turn&&S.phase==='trade'){flashWord('TURNO '+S.turn,'turn');Snd.sfx('turn');}
@@ -2408,8 +2456,9 @@ function paintOppSel(){
 }
 function bindTrade(S,i){
   const max=maxTrade(S,i);const sk=S.id+':'+S.turn+':'+S.seats[i].traded;
-  if(selFor!==sk){sel=new Set();selFor=sk;}else sel=new Set([...sel].slice(0,max));
+  if(selFor!==sk){sel=new Set();selFor=sk;discUp=false;}else sel=new Set([...sel].slice(0,max));
   const btn=$('#trade');
+  const lbl=()=>`${discUp?'Mostrar e trocar':'Trocar'} ${sel.size} carta${sel.size===1?'':'s'}`;
   document.querySelectorAll('#hand .slot').forEach(b=>{
     b.onclick=()=>{
       if(b.classList.contains('locked')){toast('Essa carta está revelada e não pode ser trocada.');return;}
@@ -2418,12 +2467,12 @@ function bindTrade(S,i){
       else{if(sel.size>=max)return;sel.add(x);Snd.sfx('select');}
       b.classList.toggle('sel',sel.has(x));
       btn.disabled=sel.size<1;
-      btn.textContent=`Trocar ${sel.size} carta${sel.size===1?'':'s'}`;
+      btn.textContent=lbl();
       pushSel();
     };
   });
   document.querySelectorAll('#hand .slot').forEach(b=>{if(sel.has(+b.dataset.i))b.classList.add('sel');});
-  btn.disabled=sel.size<1;btn.textContent=`Trocar ${sel.size} carta${sel.size===1?'':'s'}`;
+  btn.disabled=sel.size<1;btn.textContent=lbl();
   btn.onclick=()=>{
     if(sel.size<1)return;
     const idx=[...sel].sort((a,b)=>a-b);
@@ -2432,16 +2481,42 @@ function bindTrade(S,i){
     /* as cartas já saem voando para a mesa enquanto a jogada é salva */
     const flights=idx.map((x,k)=>{
       const r=slots[x].getBoundingClientRect();slots[x].style.visibility='hidden';
-      return outFlight(`<div class="gslot">${cardHTML(cardOf(hand[x]))}</div>`,r,k*220,true);
+      return outFlight(`<div class="gslot">${cardHTML(cardOf(hand[x]))}</div>`,r,k*220,discUp?false:true);
     });
     btn.disabled=true;$('#direct').disabled=true;
     localOut=true;
-    const done=Promise.resolve(doTrade(i,idx)).then(async ok=>{if(!ok){localOut=false;lastKey='';}else await waitVer(v0);});
+    const done=Promise.resolve(doTrade(i,idx,discUp)).then(async ok=>{if(!ok){localOut=false;lastKey='';}else await waitVer(v0);});
     lock(Promise.all([...flights,done]));
   };
+  document.querySelectorAll('#dmode button').forEach(b=>{b.onclick=()=>{
+    discUp=b.dataset.up==='1';
+    document.querySelectorAll('#dmode button').forEach(x=>x.classList.toggle('on',x===b));
+    btn.textContent=lbl();Snd.sfx('click');
+  };});
   $('#direct').onclick=()=>doDirect(i);
 }
+/* toque no monte de cartas mostradas: vê todas, amarelo = descartadas por mim, vermelho = pelo oponente */
+function openUpView(S,i){
+  if(document.querySelector('.upview'))return;
+  const D=(S.disc||[]).filter(e=>e&&e.u);
+  if(!D.length){toast('Nenhuma carta foi mostrada ainda.');return;}
+  CR=getRules(S);
+  const o=document.createElement('div');o.className='upview';
+  o.innerHTML=`<div class="upcap"><span class="lg me">Você</span><span class="lg op">Oponente</span></div><div class="upgrid">${D.map((e,k)=>`<div class="upc ${e.s===i?'me':'op'}" style="--d:-${((k*.43)%2.4).toFixed(2)}s;--a:${(k%2?-1:1)*(2+(k%3))}deg"><div class="gslot">${cardHTML(cardOf(e.c))}</div></div>`).join('')}</div><div class="uphint">Toque para fechar</div>`;
+  document.body.appendChild(o);
+  if(o.animate)o.animate([{opacity:0},{opacity:1}],{duration:260,fill:'both'});
+  Snd.sfx('select');
+  o.onclick=()=>{
+    const a=o.animate?o.animate([{opacity:1},{opacity:0}],{duration:200,fill:'both'}):null;
+    if(a)a.finished.then(()=>o.remove()).catch(()=>o.remove());else o.remove();
+  };
+}
 function bindGame(S,i){
+  ['#disc','#upstrip'].forEach(q=>{const el=$(q);if(el)el.onclick=()=>{
+    const trading=S.phase==='trade'&&S.status==='playing'&&!S.seats[i].acted&&!S.seats[i].done;
+    if(trading&&sel&&sel.size>0)return;   /* com carta selecionada, o toque não abre a lista */
+    openUpView(S,i);
+  };});
   const pzb=$('#pz');
   if(pzb)pzb.onclick=()=>commit(X=>{if(X.status!=='playing'||!X.seats.some(x=>isBotDev(x.dev)))return false;if(X.pz){resumeClock(X,X.pz.ts);X.pz=null;}else X.pz={ts:Date.now()};},false,true);
   const lv=$('#leave');
@@ -4094,14 +4169,14 @@ function botNeed(S,b){
       return {key:tk,at:now,wait:botRand(1000,2500),run:async()=>{
         if(botBusy)return;botBusy=true;
         try{
-          if(botMem.key!==tk)botMem={key:tk,idx:botTradeIdx(S,b),done:false};
+          if(botMem.key!==tk)botMem={key:tk,idx:botTradeIdx(S,b),up:Math.random()<0.35,done:false};
           if(!botMem.done){
             const ok=await botSelAnim(b,tid,turn,botMem.idx);
             if(!ok)return;
             botMem.done=true;
           }
           if(botMem.idx.length){
-            const okT=await doTrade(b,botMem.idx);
+            const okT=await doTrade(b,botMem.idx,botMem.up);
             if(!okT){botMem.fail=(botMem.fail||0)+1;if(botMem.fail>=2){botMem.idx=[];doDirect(b);}}   /* se a troca não passar, não trava: segue direto */
           }else doDirect(b);
         }catch(e){console.error('bot',e);botMem.fail=(botMem.fail||0)+1;if(botMem.fail>=2){botMem.idx=[];botMem.done=true;doDirect(b);}}
