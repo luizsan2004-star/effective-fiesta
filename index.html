@@ -156,19 +156,9 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .fw.vida.vq{font-weight:800;letter-spacing:.24em;background:linear-gradient(180deg,#fffbe9 0%,#f0d98a 55%,#c9a23a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;text-shadow:none;filter:drop-shadow(0 0 14px #ffe58a88)}
 .fw.vida.vq:after{content:'✦ ✦ ✦';display:block;font-size:1rem;letter-spacing:.5em;margin-top:6px}
 .spark{position:fixed;z-index:99;border-radius:50%;pointer-events:none;background:radial-gradient(circle,#fff6c8 0%,#f0d98a 45%,#f0d98a00 72%)}
-.dbig{position:fixed;inset:0;z-index:95;pointer-events:none;perspective:1800px;--ds:min(38px,9.5vw)}
-.dbig .dw2{position:absolute;left:50%;top:50%;width:var(--ds);height:var(--ds);margin:calc(var(--ds)/-2) 0 0 calc(var(--ds)/-2);transform-style:preserve-3d}
-.dcube{position:absolute;inset:0;transform-style:preserve-3d}
-.dface{position:absolute;inset:0;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:19%;gap:6%;box-sizing:border-box;background:#f7f7f4;border-radius:26%;backface-visibility:hidden;box-shadow:inset 0 0 0 1.5px #0000001c}
-.dface i{display:block;width:100%;height:100%;border-radius:50%;visibility:hidden}
-.dface i.on{visibility:visible;background:#000}
-.dface.f1{transform:translateZ(calc(var(--ds)/2))}
-.dface.f6{transform:rotateY(180deg) translateZ(calc(var(--ds)/2))}
-.dface.f3{transform:rotateY(90deg) translateZ(calc(var(--ds)/2))}
-.dface.f4{transform:rotateY(-90deg) translateZ(calc(var(--ds)/2))}
-.dface.f2{transform:rotateX(90deg) translateZ(calc(var(--ds)/2))}
-.dface.f5{transform:rotateX(-90deg) translateZ(calc(var(--ds)/2))}
-.dsh{position:absolute;left:0;top:0;width:100%;height:50%;border-radius:50%;background:radial-gradient(ellipse at center,#000000b0 0%,#00000000 70%)}
+.dbig{position:fixed;inset:0;z-index:95;pointer-events:none}
+.dbig canvas{position:absolute;left:0;top:0;width:100%;height:100%}
+.dbig .dsh{position:absolute;left:0;top:0;border-radius:50%;opacity:0;background:radial-gradient(ellipse at center,#000000c8 0%,#00000000 72%)}
 .rvtxt.dsum{top:calc(50% + 9vh + min(46px,11vw));font-size:1.4rem;line-height:1.25}
 .rvtxt.dsum b{color:#fff}
 .fw.par{font-size:2.4rem}
@@ -992,18 +982,238 @@ function dieHTML(v, rolling){
   return `<div class="die${rolling?' rolling':''}">${cells}</div>`;
 }
 
-/* dado 3D: cubo com 6 faces (1 frente, 6 trás, 3 direita, 4 esquerda, 2 topo, 5 base) */
-function cubeHTML(){
-  const M={1:[5],2:[1,9],3:[1,5,9],4:[1,3,7,9],5:[1,3,5,7,9],6:[1,3,4,6,7,9]};
-  let h='<div class="dcube">';
-  for(let v=1;v<=6;v++){
-    h+=`<div class="dface f${v}">`;
-    for(let i=1;i<=9;i++)h+=`<i class="${M[v].includes(i)?'on':''}"></i>`;
-    h+='</div>';
-  }
-  return h+'</div>';
+/* dado 3D (WebGL): cubo com quinas e bordas redondas, rola em 3D, quica, bate um no outro e para com uma face para cima */
+const DiceGL=(()=>{
+const dieSize=()=>Math.min(40,innerWidth*.1);
+const R=(a,b)=>a+Math.random()*(b-a),sg=()=>Math.random()<.5?-1:1;
+let cv=null,gl=null,lastDiceSides=[];
+function ensureGL(){
+  if(cv)return !!gl;
+  cv=document.createElement('canvas');
+  try{gl=cv.getContext('webgl',{antialias:true,alpha:true,premultipliedAlpha:true});}catch(e){gl=null;}
+  return !!gl;
 }
-let lastDiceSides=[];
+/* ---------- malha: cubo arredondado (raio 20% do lado), sem frestas ---------- */
+function buildMesh(ds){
+  const h=ds/2,r=ds*.2,a=h-r,m=7,ang=j=>j*Math.PI/4/m;
+  const U=[];
+  for(let j=m;j>=0;j--)U.push(-(a+r*Math.tan(ang(j))));
+  for(let j=0;j<=m;j++)U.push(a+r*Math.tan(ang(j)));
+  /* [normal, eixo u, eixo v] de cada face: 1 frente, 2 topo, 3 direita, 4 esquerda, 5 base, 6 trás */
+  const F=[[[0,0,1],[1,0,0],[0,1,0]],[[0,-1,0],[1,0,0],[0,0,1]],[[1,0,0],[0,0,-1],[0,1,0]],
+           [[-1,0,0],[0,0,1],[0,1,0]],[[0,1,0],[1,0,0],[0,0,-1]],[[0,0,-1],[-1,0,0],[0,1,0]]];
+  const pos=[],nor=[],uv=[],idx=[],n=U.length;
+  F.forEach((f,fi)=>{
+    const [N,Uv,Vv]=f,base=pos.length/3;
+    for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+      const u=U[i],v=U[j];
+      const q=[0,1,2].map(k=>N[k]*h+Uv[k]*u+Vv[k]*v);
+      const c=q.map(x=>Math.max(-a,Math.min(a,x)));
+      let d=q.map((x,k)=>x-c[k]);const l=Math.hypot(d[0],d[1],d[2]);d=d.map(x=>x/l);
+      pos.push(c[0]+d[0]*r,c[1]+d[1]*r,c[2]+d[2]*r);nor.push(d[0],d[1],d[2]);
+      uv.push(((fi%4)+.5+u/h*.5*.94)/4,(Math.floor(fi/4)+.5+v/h*.5*.94)/2);
+    }
+    for(let i=0;i<n-1;i++)for(let j=0;j<n-1;j++){
+      const p0=base+i*n+j,p1=p0+1,p2=p0+n,p3=p2+1;idx.push(p0,p1,p2,p1,p3,p2);
+    }
+  });
+  return {pos:new Float32Array(pos),nor:new Float32Array(nor),uv:new Float32Array(uv),idx:new Uint16Array(idx)};
+}
+
+/* ---------- textura: 6 faces brancas com as bolinhas pretas ---------- */
+function buildAtlas(){
+  const c=document.createElement('canvas');c.width=1024;c.height=512;
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,1024,512);x.fillStyle='#111';
+  const M={1:[5],2:[1,9],3:[1,5,9],4:[1,3,7,9],5:[1,3,5,7,9],6:[1,3,4,6,7,9]};
+  for(let v=1;v<=6;v++){
+    const cx=((v-1)%4)*256+128,cy=Math.floor((v-1)/4)*256+128;
+    M[v].forEach(i=>{
+      const px=cx+(((i-1)%3)-1)*56.5,py=cy+(Math.floor((i-1)/3)-1)*56.5;
+      x.beginPath();x.arc(px,py,21,0,Math.PI*2);x.fill();
+    });
+  }
+  return c;
+}
+
+/* ---------- WebGL ---------- */
+let prog,buf={},tex,loc={},meshN=0,meshDs=0;
+function glInit(){
+  const vs=`attribute vec3 aPos;attribute vec3 aNor;attribute vec2 aUv;
+uniform mat3 uR;uniform vec3 uT;uniform vec2 uHalf;uniform float uF;
+varying vec3 vN;varying vec2 vUv;
+void main(){vec3 p=uR*aPos+uT;vN=uR*aNor;vUv=aUv;float w=uF-p.z;
+gl_Position=vec4(p.x*uF/uHalf.x,-p.y*uF/uHalf.y,-p.z*0.004*w,w);}`;
+  const fs=`precision mediump float;uniform sampler2D uTex;varying vec3 vN;varying vec2 vUv;
+void main(){vec3 n=normalize(vN);vec3 L=normalize(vec3(-.35,-.5,.8));
+float k=.60+.55*max(dot(n,L),0.);
+gl_FragColor=vec4(min(texture2D(uTex,vUv).rgb*k,vec3(1.)),1.);}`;
+  const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o;};
+  prog=gl.createProgram();gl.attachShader(prog,sh(gl.VERTEX_SHADER,vs));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,fs));
+  gl.linkProgram(prog);gl.useProgram(prog);
+  ['uR','uT','uHalf','uF','uTex'].forEach(n=>loc[n]=gl.getUniformLocation(prog,n));
+  ['aPos','aNor','aUv'].forEach(n=>loc[n]=gl.getAttribLocation(prog,n));
+  tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,buildAtlas());
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.uniform1i(loc.uTex,0);
+  gl.enable(gl.DEPTH_TEST);
+}
+function setMesh(ds){
+  if(meshDs===ds)return;meshDs=ds;
+  const m=buildMesh(ds);meshN=m.idx.length;
+  const up=(k,data,t)=>{if(!buf[k])buf[k]=gl.createBuffer();gl.bindBuffer(t,buf[k]);gl.bufferData(t,data,gl.STATIC_DRAW);};
+  up('pos',m.pos,gl.ARRAY_BUFFER);up('nor',m.nor,gl.ARRAY_BUFFER);up('uv',m.uv,gl.ARRAY_BUFFER);up('idx',m.idx,gl.ELEMENT_ARRAY_BUFFER);
+}
+function bindAttrs(){
+  [['pos','aPos',3],['nor','aNor',3],['uv','aUv',2]].forEach(([k,a,s])=>{
+    gl.bindBuffer(gl.ARRAY_BUFFER,buf[k]);gl.enableVertexAttribArray(loc[a]);gl.vertexAttribPointer(loc[a],s,gl.FLOAT,false,0,0);
+  });
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,buf.idx);
+}
+
+/* ---------- matrizes de rotação (mesma convenção do CSS) ---------- */
+const d2r=Math.PI/180;
+const RX=t=>{t*=d2r;const c=Math.cos(t),s=Math.sin(t);return [1,0,0,0,c,-s,0,s,c];};
+const RY=t=>{t*=d2r;const c=Math.cos(t),s=Math.sin(t);return [c,0,s,0,1,0,-s,0,c];};
+const RZ=t=>{t*=d2r;const c=Math.cos(t),s=Math.sin(t);return [c,-s,0,s,c,0,0,0,1];};
+const mul=(A,B)=>{const o=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++)o.push(A[i*3]*B[j]+A[i*3+1]*B[3+j]+A[i*3+2]*B[6+j]);return o;};
+const colMajor=M=>new Float32Array([M[0],M[3],M[6],M[1],M[4],M[7],M[2],M[5],M[8]]);
+
+/* ---------- animação por quadros (curvas de suavização + keyframes) ---------- */
+function bezier(x1,y1,x2,y2){
+  if(x1===y1&&x2===y2)return t=>t;
+  const cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx,cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;
+  const X=t=>((ax*t+bx)*t+cx)*t,Y=t=>((ay*t+by)*t+cy)*t,dX=t=>(3*ax*t+2*bx)*t+cx;
+  return x=>{
+    let t=x;
+    for(let i=0;i<8;i++){const e=X(t)-x;if(Math.abs(e)<1e-5)return Y(t);const d=dX(t);if(Math.abs(d)<1e-6)break;t-=e/d;}
+    let lo=0,hi=1;t=x;for(let i=0;i<24;i++){if(X(t)<x)lo=t;else hi=t;t=(lo+hi)/2;}
+    return Y(t);
+  };
+}
+const EASE={linear:t=>t,'ease-in':bezier(.42,0,1,1),'ease-out':bezier(0,0,.58,1),slide:bezier(.25,.45,.4,1)};
+function sample(fr,p){
+  if(p<=fr[0].o)return fr[0].v;
+  for(let i=0;i<fr.length-1;i++){
+    const a=fr[i],b=fr[i+1];
+    if(p<=b.o){const k=EASE[a.e||'linear']((p-a.o)/(b.o-a.o));return a.v.map((x,j)=>x+(b.v[j]-x)*k);}
+  }
+  return fr[fr.length-1].v;
+}
+
+/* ---------- uma rolagem completa ---------- */
+const RD=3000,T1=.26,T2=.46,T3=.60,T4=.72;
+const BASE={1:[0,0],2:[-90,0],3:[0,-90],4:[0,90],5:[90,0],6:[0,180]};   /* giro que deixa a face N virada para você */
+const fin=(prev,base,dir)=>{prev+=dir*180;return dir>0?base+360*Math.ceil((prev-base)/360):base-360*Math.ceil((base-prev)/360);};
+
+function planRoll(S,sz){
+  const W=innerWidth,H=innerHeight;
+  /* cada dado entra por um lado diferente, e diferente da rolagem anterior */
+  const sides=[];
+  for(let k=0;k<2;k++){
+    const ok=[0,1,2,3].filter(x=>x!==lastDiceSides[k]&&!sides.includes(x));
+    sides.push(ok[Math.floor(Math.random()*ok.length)]);
+  }
+  lastDiceSides=sides.slice();
+  const entry=sd=>{const m=sz*2.5;
+    if(sd===0)return [R(-.4,.4)*W,-H/2-m];if(sd===1)return [R(-.4,.4)*W,H/2+m];
+    if(sd===2)return [-W/2-m,R(-.4,.4)*H];return [W/2+m,R(-.4,.4)*H];};
+  const ent=[entry(sides[0]),entry(sides[1])];
+  /* onde param: perto do centro, sem se sobrepor e sem cobrir o texto da soma */
+  const mg=sz*1.15,hx=Math.max(Math.min(W/2-mg,W*.28),0),hy=Math.max(Math.min(H/2-mg,H*.2),0);
+  const tTop=H*.09+Math.min(46,W*.11)-6,tBot=tTop+96;
+  const okSpot=q=>q[1]+sz*.9<tTop||q[1]-sz*.9>tBot;
+  let land=null;
+  for(let t=0;t<80&&!land;t++){
+    const a=[R(-hx,hx),R(-hy,hy)],b=[R(-hx,hx),R(-hy,hy)];
+    if(Math.hypot(a[0]-b[0],a[1]-b[1])>sz*2.4&&(t>60||(okSpot(a)&&okSpot(b))))land=[a,b];
+  }
+  if(!land)land=[[-sz*1.3,-H*.2],[sz*1.3,-H*.2]];
+  /* evento aleatório: às vezes os dois dados se chocam e cada um é jogado para um lado */
+  let col=null;
+  if(Math.random()<.65){
+    const ci=Math.random()<.5?1:2,tc=[T1,T2,T3][ci];
+    let nx=ent[1][0]-ent[0][0],ny=ent[1][1]-ent[0][1];const nl=Math.hypot(nx,ny)||1;nx/=nl;ny/=nl;
+    const rot=(x,y,d)=>{const c=Math.cos(d),s=Math.sin(d);return [x*c-y*s,x*s+y*c];};
+    const cl=(v,m)=>Math.max(-m,Math.min(m,v));
+    for(let t=0;t<60&&!col;t++){
+      const C=[R(-hx,hx)*.7,R(-hy,hy)*.7],g=sz*.56;
+      const Ck=[[C[0]-nx*g,C[1]-ny*g],[C[0]+nx*g,C[1]+ny*g]];
+      const d0=rot(-nx,-ny,R(-.9,.9)),d1=rot(nx,ny,R(-.9,.9));
+      const L=[[cl(Ck[0][0]+d0[0]*R(2.2,4.2)*sz,hx),cl(Ck[0][1]+d0[1]*R(2.2,4.2)*sz,hy)],[cl(Ck[1][0]+d1[0]*R(2.2,4.2)*sz,hx),cl(Ck[1][1]+d1[1]*R(2.2,4.2)*sz,hy)]];
+      if(Math.hypot(L[0][0]-L[1][0],L[0][1]-L[1][1])>sz*2.4&&(t>45||(okSpot(L[0])&&okSpot(L[1]))))col={ci,tc,Ck,L};
+    }
+    if(col)land=col.L;
+  }
+  const d=[0,1].map(k=>{
+    const [sx,sy]=ent[k],[lx,ly]=land[k];
+    const lp=(A,B,f)=>[A[0]+(B[0]-A[0])*f+R(-.3,.3)*sz*(1-f),A[1]+(B[1]-A[1])*f+R(-.3,.3)*sz*(1-f)];
+    const at=f=>[sx+(lx-sx)*f+R(-.5,.5)*sz*1.2*(1-f),sy+(ly-sy)*f+R(-.5,.5)*sz*1.2*(1-f)];
+    let pos;
+    if(col){const Ck=col.Ck[k];
+      pos=col.ci===1?[lp([sx,sy],Ck,.55),Ck,lp(Ck,[lx,ly],.55)]:[lp([sx,sy],Ck,.45),lp([sx,sy],Ck,.75),Ck];
+    }else pos=[at(.5),at(.68),at(.8)];
+    const xy=[{o:0,v:[sx,sy],e:'linear'},{o:T1,v:pos[0],e:'linear'},{o:T2,v:pos[1],e:'linear'},{o:T3,v:pos[2],e:'slide'},{o:1,v:[lx,ly]}];
+    /* altura, giro nos 3 eixos e inclinação (que some no fim: o dado assenta com uma face só virada para cima) */
+    let dX=sg(),dY=sg();
+    const tilt=[R(-26,-10),R(-30,30),R(-14,14)],bs=BASE[S.dice[k]]||BASE[1];
+    const steps0=[[0,150,'ease-in'],[T1,0,'ease-out'],[(T1+T2)/2,125,'ease-in'],[T2,0,'ease-out'],[(T2+T3)/2,65,'ease-in'],[T3,0,'ease-out'],[(T3+T4)/2,26,'ease-in'],[T4,0,'ease-out']];
+    const steps=steps0.map(([o,z,e])=>[o,col&&o>col.tc?z*1.5:z,e]);   /* depois do choque os pulos ficam maiores */
+    let rx=R(0,360),ry=R(0,360),po=0,flip=false;
+    const cube=steps.map(([o,z,e],j)=>{
+      const af=!!col&&o>col.tc+1e-6;
+      if(af&&!flip){flip=true;dX=sg();dY=sg();}   /* o choque muda o sentido do giro */
+      if(j>0){const v=af?1.4:1;rx+=dX*R(1000,1700)*v*(o-po);ry+=dY*R(1000,1700)*v*(o-po);}
+      po=o;return {o,v:[z,rx,ry,1],e};
+    });
+    cube.push({o:1,v:[0,fin(rx,bs[0],dX),fin(ry,bs[1],dY),0]});
+    return {xy,cube,tilt};
+  });
+  return {d,col};
+}
+
+function drawFrame(plan,p,sz,shadows){
+  const W=innerWidth,H=innerHeight;
+  gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  plan.d.forEach((d,k)=>{
+    const [x,y]=sample(d.xy,p),[z,rx,ry,f]=sample(d.cube,p);
+    const M=mul(mul(mul(mul(RX(d.tilt[0]*f),RY(d.tilt[1]*f)),RZ(d.tilt[2])),RX(rx)),RY(ry));
+    gl.uniformMatrix3fv(loc.uR,false,colMajor(M));
+    gl.uniform3f(loc.uT,x,y-z*.5,z);
+    gl.drawElements(gl.TRIANGLES,meshN,gl.UNSIGNED_SHORT,0);
+    /* sombra no chão: encolhe e some quando o dado está no ar */
+    const e=shadows[k],sc=1.05-z/330;
+    e.style.width=sz+'px';e.style.height=sz*.5+'px';
+    e.style.transform=`translate(${W/2+x-sz/2}px,${H/2+y+sz*.12}px) scale(${sc})`;
+    e.style.opacity=Math.max(.12,.6-z/400);
+  });
+}
+
+
+async function play(S,box,cb){
+  const W=innerWidth,H=innerHeight,sz=dieSize();
+  if(!ensureGL()){await new Promise(r=>setTimeout(r,RD));return;}   /* sem WebGL: só espera o tempo da rolagem */
+  const dpr=Math.min(devicePixelRatio||1,3);
+  const sh=[0,1].map(()=>{const e=document.createElement('div');e.className='dsh';box.appendChild(e);return e;});
+  box.appendChild(cv);
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);gl.viewport(0,0,cv.width,cv.height);
+  if(!prog)glInit();
+  setMesh(sz);bindAttrs();
+  gl.uniform2f(loc.uHalf,W/2,H/2);gl.uniform1f(loc.uF,1800);
+  const plan=planRoll(S,sz);
+  if(cb){[T1,T2,T3,T4].forEach(f=>setTimeout(()=>{if(cb.beat)cb.beat();},RD*f));if(plan.col)setTimeout(()=>{if(cb.hit)cb.hit();},RD*plan.col.tc);}
+  await new Promise(res=>{
+    const t0=performance.now();
+    const tick=now=>{const p=Math.min(1,(now-t0)/RD);drawFrame(plan,p,sz,sh);if(p<1)requestAnimationFrame(tick);else res();};
+    requestAnimationFrame(tick);
+  });
+}
+return {play};
+})();
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -2044,91 +2254,13 @@ async function runDice(S){
     /* tela escura + dados grandes no meio */
     const o=document.createElement('div');o.className='rvdark';
     const box=document.createElement('div');box.className='dbig';
-    box.innerHTML='<div class="dw2"><div class="dsh"></div>'+cubeHTML()+'</div><div class="dw2"><div class="dsh"></div>'+cubeHTML()+'</div>';
+    box.innerHTML='';
     const bt=document.createElement('div');bt.className='rvtxt dsum';bt.style.opacity='0';
     document.body.appendChild(o);document.body.appendChild(box);document.body.appendChild(bt);
-    const bw=[...box.querySelectorAll('.dw2')];
     if(o.animate)o.animate([{opacity:0},{opacity:1}],{duration:600,fill:'both'});
     Snd.sfx('dice');
-    const RD=3000,W=innerWidth,H=innerHeight,sz=Math.min(38,W*.095),R=(a,b)=>a+Math.random()*(b-a),sg=()=>Math.random()<.5?-1:1;
-    /* cada dado entra por um lado da tela: lados diferentes entre si e diferentes da rolagem anterior */
-    const sides=[];
-    for(let k=0;k<2;k++){
-      const ok=[0,1,2,3].filter(x=>x!==lastDiceSides[k]&&!sides.includes(x));
-      sides.push(ok[Math.floor(Math.random()*ok.length)]);
-    }
-    lastDiceSides=sides.slice();
-    const entry=sd=>{
-      const m=sz*2.5;
-      if(sd===0)return [R(-.4,.4)*W,-H/2-m];
-      if(sd===1)return [R(-.4,.4)*W,H/2+m];
-      if(sd===2)return [-W/2-m,R(-.4,.4)*H];
-      return [W/2+m,R(-.4,.4)*H];
-    };
-    /* onde cada dado para: qualquer ponto da tela, sem se sobrepor e sem cobrir o texto da soma */
-    const mg=sz*1.15,hx=Math.max(Math.min(W/2-mg,W*.28),0),hy=Math.max(Math.min(H/2-mg,H*.2),0);
-    const tTop=H*.09+Math.min(46,W*.11)-6,tBot=tTop+96;
-    const okSpot=q=>q[1]+sz*.9<tTop||q[1]-sz*.9>tBot;
-    let land=null;
-    for(let t=0;t<80&&!land;t++){
-      const a=[R(-hx,hx),R(-hy,hy)],b=[R(-hx,hx),R(-hy,hy)];
-      if(Math.hypot(a[0]-b[0],a[1]-b[1])>sz*2.4&&(t>60||(okSpot(a)&&okSpot(b))))land=[a,b];
-    }
-    if(!land)land=[[-sz*1.3,-H*.2],[sz*1.3,-H*.2]];
-    const T1=.26,T2=.46,T3=.60,T4=.72;
-    const BASE={1:[0,0],2:[-90,0],3:[0,-90],4:[0,90],5:[90,0],6:[0,180]};   /* giro do cubo que deixa a face N virada para você */
-    const fin=(prev,base,dir)=>{prev+=dir*180;return dir>0?base+360*Math.ceil((prev-base)/360):base-360*Math.ceil((base-prev)/360);};
-    /* evento aleatório: às vezes os dois dados se chocam no caminho e cada um é jogado para um lado */
-    const ent=[entry(sides[0]),entry(sides[1])];
-    let col=null;
-    if(Math.random()<.65){
-      const ci=Math.random()<.5?1:2,tc=[T1,T2,T3][ci];
-      let nx=ent[1][0]-ent[0][0],ny=ent[1][1]-ent[0][1];const nl=Math.hypot(nx,ny)||1;nx/=nl;ny/=nl;
-      const rot=(x,y,d)=>{const c=Math.cos(d),s=Math.sin(d);return [x*c-y*s,x*s+y*c];};
-      const cl=(v,m)=>Math.max(-m,Math.min(m,v));
-      for(let t=0;t<60&&!col;t++){
-        const C=[R(-hx,hx)*.7,R(-hy,hy)*.7],g=sz*.56;
-        const Ck=[[C[0]-nx*g,C[1]-ny*g],[C[0]+nx*g,C[1]+ny*g]];
-        const d0=rot(-nx,-ny,R(-.9,.9)),d1=rot(nx,ny,R(-.9,.9));
-        const L=[[cl(Ck[0][0]+d0[0]*R(2.2,4.2)*sz,hx),cl(Ck[0][1]+d0[1]*R(2.2,4.2)*sz,hy)],[cl(Ck[1][0]+d1[0]*R(2.2,4.2)*sz,hx),cl(Ck[1][1]+d1[1]*R(2.2,4.2)*sz,hy)]];
-        if(Math.hypot(L[0][0]-L[1][0],L[0][1]-L[1][1])>sz*2.4&&(t>45||(okSpot(L[0])&&okSpot(L[1]))))col={ci,tc,Ck,L};
-      }
-      if(col)land=col.L;
-    }
-    bw.forEach((w,k)=>{
-      const cube=w.querySelector('.dcube'),sh=w.querySelector('.dsh');
-      const [sx,sy]=ent[k],[lx,ly]=land[k];
-      const at=f=>[sx+(lx-sx)*f+R(-.5,.5)*sz*1.2*(1-f),sy+(ly-sy)*f+R(-.5,.5)*sz*1.2*(1-f)];
-      let pos;
-      if(col){
-        const Ck=col.Ck[k],lp=(A,B,f)=>[A[0]+(B[0]-A[0])*f+R(-.3,.3)*sz*(1-f),A[1]+(B[1]-A[1])*f+R(-.3,.3)*sz*(1-f)];
-        pos=col.ci===1?[lp([sx,sy],Ck,.55),Ck,lp(Ck,[lx,ly],.55)]:[lp([sx,sy],Ck,.45),lp([sx,sy],Ck,.75),Ck];
-      }else pos=[at(.5),at(.68),at(.8)];
-      /* trajetória no plano da tela: vem de fora, quica 3x e desliza até parar */
-      const P=(q,o,e)=>({transform:`translate(${q[0]}px,${q[1]}px)`,offset:o,easing:e});
-      w.animate([P([sx,sy],0,'linear'),P(pos[0],T1,'linear'),P(pos[1],T2,'linear'),P(pos[2],T3,'cubic-bezier(.25,.45,.4,1)'),P([lx,ly],1,'linear')],{duration:RD,fill:'both'});
-      /* altura (z) e giro em 3D nos três eixos; no fim a face sorteada fica virada para cima */
-      let dX=sg(),dY=sg();const tx=R(-26,-10),ty=R(-30,30),tz=R(-14,14),bs=BASE[S.dice[k]]||BASE[1];
-      const tf=(z,x,y,f=1)=>`translate3d(0px,${-z*.5}px,${z}px) rotateX(${tx*f}deg) rotateY(${ty*f}deg) rotateZ(${tz}deg) rotateX(${x}deg) rotateY(${y}deg)`;
-      const steps0=[[0,150,'ease-in'],[T1,0,'ease-out'],[(T1+T2)/2,125,'ease-in'],[T2,0,'ease-out'],[(T2+T3)/2,65,'ease-in'],[T3,0,'ease-out'],[(T3+T4)/2,26,'ease-in'],[T4,0,'ease-out']];
-      const steps=steps0.map(([o,z,e])=>[o,col&&o>col.tc?z*1.5:z,e]);   /* depois do choque os pulos ficam maiores */
-      let rx=R(0,360),ry=R(0,360),po=0,flip=false;
-      const kf=steps.map(([o,z,e],j)=>{
-        const af=!!col&&o>col.tc+1e-6;
-        if(af&&!flip){flip=true;dX=sg();dY=sg();}   /* o choque muda o sentido do giro */
-        if(j>0){const v=af?1.4:1;rx+=dX*R(1000,1700)*v*(o-po);ry+=dY*R(1000,1700)*v*(o-po);}
-        po=o;return {transform:tf(z,rx,ry),offset:o,easing:e};
-      });
-      kf.push({transform:tf(0,fin(rx,bs[0],dX),fin(ry,bs[1],dY),0),offset:1});
-      cube.animate(kf,{duration:RD,fill:'both'});
-      /* sombra no chão: some e encolhe quando o dado está no ar */
-      sh.animate(steps.map(([o,z])=>({transform:`translate3d(0,${sz*.62}px,${-sz}px) scale(${1.05-z/330})`,opacity:Math.max(.12,.6-z/400),offset:o})).concat([{transform:`translate3d(0,${sz*.62}px,${-sz}px) scale(1.05)`,opacity:.6,offset:1}]),{duration:RD,fill:'both'});
-      /* som de cada batida (só uma vez por rolagem) */
-      if(k===0&&col)setTimeout(()=>{if(w.isConnected)Snd.sfx('diceLand');},RD*col.tc);
-      if(k===0)[T1,T2,T3,T4].forEach(f=>setTimeout(()=>{if(w.isConnected)Snd.sfx('place');},RD*f));
-    });
     setTimeout(()=>Snd.sfx('dice'),1300);
-    await sleep(RD);
+    await DiceGL.play(S,box,{beat:()=>Snd.sfx('place'),hit:()=>Snd.sfx('diceLand')});
     Snd.sfx('diceLand');
     bt.innerHTML=`<div style="font-size:.95rem;opacity:.85;letter-spacing:.08em">Soma ${tot}</div><b style="font-size:2.4rem;letter-spacing:.12em">${lbl}</b>`;bt.style.opacity='1';
     if(bt.animate)bt.animate([{transform:'scale(.6)',opacity:0},{transform:'scale(1.1)',opacity:1,offset:.6},{transform:'scale(1)',opacity:1}],{duration:420,easing:'ease-out'});
