@@ -652,6 +652,12 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
   <div id="adm_detv" style="display:none"></div>
 </div></div>
 
+<div class="mw" id="w_bot" role="dialog" aria-label="Jogar com um bot"><div class="wbox">
+  <h3>Jogar com um bot?</h3>
+  <p class="hint" id="bot_txt" style="text-align:center"></p>
+  <div class="row2"><button class="btn ghost" id="bot_no">Cancelar</button><button class="btn" id="bot_yes">Jogar</button></div>
+</div></div>
+
 <div id="lockbox" role="alertdialog" aria-label="Aviso da conta"><div class="wbox">
   <h3 id="lock_t"></h3>
   <p class="hint" id="lock_m" style="text-align:center"></p>
@@ -1153,16 +1159,21 @@ setInterval(()=>{
 },1000);
 
 /* leitura/gravação das carteiras dentro da mesma transação da mesa (tudo ou nada) */
+/* bots: jogador virtual (assento com dev "bot_<mesa>"), moedas infinitas e sem carteira no banco */
+const isBotDev=d=>String(d||'').indexOf('bot_')===0;
+const BOT_NAMES=['Bot Tião','Bot Duda','Bot Nino','Bot Lia','Bot Beto','Bot Mara'];
 async function readW(tx,S){
-  const W={},devs=[...new Set(S.seats.map(x=>x.dev).filter(Boolean))];
+  const W={},all=[...new Set(S.seats.map(x=>x.dev).filter(Boolean))];
+  const devs=all.filter(d=>!isBotDev(d));
+  all.filter(isBotDev).forEach(d=>{W[d]=ADMIN_COINS;});
   const snaps=await Promise.all(devs.map(d=>tx.get(fs.doc('wallets/'+d))));
   snaps.forEach((sn,k)=>{W[devs[k]]=sn.exists?(sn.data().coins||0):START_COINS;});
   return W;
 }
 function writeW(tx,W,W0){
-  (W.__h||[]).forEach(h=>tx.set(fs.collection('wallets/'+h.dev+'/history').doc(),h.rec));
+  (W.__h||[]).forEach(h=>{if(!isBotDev(h.dev))tx.set(fs.collection('wallets/'+h.dev+'/history').doc(),h.rec);});
   Object.keys(W).forEach(d=>{
-    if(W[d]===W0[d])return;
+    if(isBotDev(d)||W[d]===W0[d])return;
     const data={coins:W[d],ts:Date.now()};
     if(W[d]<=0)data.zeroAt=Date.now();   /* zerou: começa a contar os 30 min */
     else data.zeroAt=null;
@@ -1273,7 +1284,7 @@ function removeSeat(S,k,W){
   else if(S.status==='finished'){   /* saiu depois do fim da partida: quem ficou continua sentado, aguardando outro jogador */
     if(W&&((S.stake||0)>0||(S.carry||0)>0))S.seats.forEach(x=>{if(x.dev&&W[x.dev]!==undefined)W[x.dev]+=(S.stake||0)+(S.carry||0)/2;});   /* série/pote acumulado: devolve */
     const o=S.seats[1-k],F=freshTable(S.id);
-    if(o&&o.uid&&!o.left)F.seats[1-k]=Object.assign(emptySeat(),{uid:o.uid,name:o.name,dev:o.dev,since:Date.now()});
+    if(o&&o.uid&&!o.left&&!isBotDev(o.dev))F.seats[1-k]=Object.assign(emptySeat(),{uid:o.uid,name:o.name,dev:o.dev,since:Date.now()});
     if(isPriv(S.id)){F.bet=S.bet;F.rules=S.rules;}
     Object.assign(S,F);
     return;
@@ -1285,7 +1296,7 @@ function removeSeat(S,k,W){
     }
     me.left=true;S.rematch=[false,false];
   }
-  if(S.seats.every(x=>!x.uid||x.left))Object.assign(S,freshTable(S.id));   /* mesa vazia: volta ao estado inicial */
+  if(S.seats.every(x=>!x.uid||x.left||isBotDev(x.dev)))Object.assign(S,freshTable(S.id));   /* mesa vazia (ou só com bot): volta ao estado inicial */
 }
 /* opts.who = [ids] só remove se o assento for dessa pessoa; opts.ghost = só remove se a presença expirou */
 async function removeFromTable(tid,k,opts){
@@ -1296,6 +1307,7 @@ async function removeFromTable(tid,k,opts){
     if(!x||!x.uid||x.left)return false;
     if(opts.who&&!opts.who.includes(x.dev)&&!opts.who.includes(x.uid))return false;
     if(opts.ghost){
+      if(isBotDev(x.dev))return false;
       const ps=await tx.get(fs.doc('presence/'+(x.dev||x.uid)));
       const last=Math.max(ps.exists?(ps.data().ts||0):0,x.since||0);
       if(Date.now()-last<=PRES_TTL)return false;
@@ -1511,6 +1523,7 @@ function respondRefund(i,ok){
     if(ok){   /* apostas devolvidas, quem pediu sai sem perder nada */
       S.abandoned=k;settle(S,W,-1,true);S.status='abandoned';S.seats[k].left=true;S.rematch=[false,false];
       pushEv(S,`${S.seats[i].name} concedeu o reembolso`);
+      if(S.seats.every(x=>!x.uid||x.left||isBotDev(x.dev)))Object.assign(S,freshTable(S.id));
     }else{    /* recusou: quem pediu sai e perde a aposta */
       removeSeat(S,k,W);
     }
@@ -1698,7 +1711,7 @@ function gameHTML(S,i){
 
   if(S.status==='starting')return G(bar+betRowHTML(S,i),`<div class="wait soft"><h2>${esc(me.name)} x ${esc(opp.name)}</h2><p class="sub">A partida já vai começar. Se quiser, altere a aposta agora.</p><p class="sub" id="cd" style="color:var(--gold);font-weight:700"></p></div>`,leave);
   if(S.status==='open'&&isPriv(S.id))return G(bar+betRowHTML(S,i),privWaitHTML(S,i),leave);
-  if(S.status==='open')return G(bar+betRowHTML(S,i),`<div class="wait"><h2>Aguardando oponente</h2><p class="sub">A partida começa quando outra pessoa sentar na mesa ${k}.</p></div>`,leave);
+  if(S.status==='open')return G(bar+betRowHTML(S,i),`<div class="wait"><h2>Aguardando oponente</h2><p class="sub">A partida começa quando outra pessoa sentar na mesa ${k}.</p><button class="btn ghost" id="botbtn" ${(lockd()||!wallet.ok)?'disabled':''}>Jogar com um bot</button></div>`,leave);
   if(S.status==='abandoned')return G(bar,`<div class="banner ${S.payout&&S.payout.w<0?'draw':'win'}">${S.payout&&S.payout.w<0?'Partida encerrada':'Vitória por W.O.'}<small>${esc(opp.name)} saiu da mesa.${payTxt(S,i)}</small></div>`,`<button class="btn" id="wait2">Aguardar novo oponente</button>`+leave);
 
   const reveal=S.status==='finished';
@@ -2038,6 +2051,7 @@ function bindGame(S,i){
   };
   if($('#dice')&&!animating&&S.rollAt&&animDone!==S.rollAt)runDice(S);
   const ag=$('#again');if(ag)ag.onclick=()=>playAgain(i);
+  const bb=$('#botbtn');if(bb)bb.onclick=openBotBox;
   const w2=$('#wait2');if(w2)w2.onclick=()=>waitAgain();
   const ic=$('#icancel');if(ic)ic.onclick=cancelInvite;
   const inw=$('#inew');if(inw)inw.onclick=openInvBox;
@@ -2142,7 +2156,7 @@ setInterval(()=>{
     const S=tables[tid];if(!S||!S.seats)continue;
     for(let k=0;k<2;k++){
       const x=S.seats[k];
-      if(!x||!x.uid||x.left)continue;
+      if(!x||!x.uid||x.left||isBotDev(x.dev))continue;
       if(mine&&mine.tid===tid&&mine.seat===k)continue;
       const p=pres[x.dev||x.uid];
       const last=Math.max(p?(p.ts||0):0,x.since||0);
@@ -2177,6 +2191,7 @@ function paintVoice(){
   vb.style.display=mine?'block':'none';
   if(!mine)return;
   const S=tables[mine.tid],me=S&&S.seats[mine.seat],op=S&&S.seats[1-mine.seat],on=V.on;
+  if(op&&op.uid&&isBotDev(op.dev)){vb.style.display='none';if(on)voiceStop();return;}
   $('#vnme').textContent=me&&me.name?me.name:'Você';
   $('#vnop').textContent=(op&&op.uid&&!op.left)?op.name:'Aguardando...';
   $('#vume').className='vu'+(on?' in':'')+(V.speak.me?' sp':'')+(V.muted?' mt':'');
@@ -2611,6 +2626,7 @@ document.addEventListener('click',e=>{
   if(!a||!fs)return;
   e.preventDefault();
   try{Snd.sfx('click');}catch(x){}
+  if(isBotDev(a.dataset.dev)||/^Bot /.test(a.dataset.name||'')){toast('Este oponente é um bot.');return;}
   openProfile(a.dataset.dev||'',a.dataset.name||'');
 });
 $('#walbox').addEventListener('pointerdown',e=>{if(e.target.id==='walbox')closeWallet();});
@@ -3425,6 +3441,116 @@ async function admRemove(r){
   await flush();
   await fs.doc('wallets/'+dev).delete();   /* por último: é o que avisa o aparelho da pessoa */
 }
+
+
+/* ---------- bot: jogador virtual para quando não há ninguém na mesa ---------- */
+function openBotBox(){
+  if(!mine)return;const S=tables[mine.tid];
+  if(!S||S.status!=='open'||isPriv(S.id))return;
+  $('#bot_txt').innerHTML='Você joga contra um bot, com aposta de <b>🪙'+(S.bet||BASE_BET[S.id]||50)+'</b> cada, como numa partida normal. Se perder, perde essas moedas. O bot nunca fica sem moedas.';
+  $('#bot_yes').disabled=false;
+  $('#w_bot').classList.add('on');
+}
+$('#bot_no').onclick=()=>$('#w_bot').classList.remove('on');
+$('#bot_yes').onclick=()=>startBotGame();
+async function startBotGame(){
+  if(!mine||busy)return;
+  if(lockd()){$('#w_bot').classList.remove('on');toast(lockMsg());return;}
+  const tid=mine.tid,k=mine.seat;
+  busy=true;$('#bot_yes').disabled=true;
+  try{
+    const ref=fs.doc('tables/'+tid);
+    const res=await fs.runTransaction(async tx=>{
+      const snap=await tx.get(ref);if(!snap.exists)return 'gone';
+      const cur=snap.data(),S=clone(cur),me=S.seats[k],o=1-k;
+      if(isPriv(tid)||S.status!=='open')return 'busy';
+      if(!me||!me.uid||me.left||(me.dev!==DEV&&me.uid!==uid))return 'gone';
+      if(S.seats[o].uid&&!S.seats[o].left)return 'busy';
+      const nm=BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)];
+      S.seats[o]=Object.assign(emptySeat(),{uid:'bot_'+tid,name:nm,dev:'bot_'+tid,since:Date.now()});
+      const W=await readW(tx,S);
+      if(!canAfford(S,W))return 'poor';
+      S.status='starting';S.startAt=Date.now()+PRESTART_MS;S.prop=null;S.refund=null;
+      S.v=(cur.v||0)+1;S.ts=Date.now();
+      tx.set(ref,S);return 'ok';
+    });
+    $('#w_bot').classList.remove('on');
+    if(res==='busy')toast('Alguém acabou de sentar na mesa. A partida vai começar com essa pessoa.');
+    else if(res==='poor')toast('Você não tem moedas suficientes para esta mesa.');
+    else if(res==='gone')toast('Você não está mais nesta mesa.');
+  }catch(e){$('#w_bot').classList.remove('on');toast('Não foi possível chamar o bot: '+((e&&e.message)||e));}
+  finally{busy=false;}
+}
+
+/* o bot é conduzido pelo aparelho de quem joga contra ele: espera um tempo parecido com o de uma pessoa e faz a jogada */
+const botRand=(a,b)=>a+Math.random()*(b-a);
+const botAvg=S=>{CR=getRules(S);let t=0;for(let r=0;r<13;r++)t+=cardOf(r).v;return t/13;};
+function botTradeIdx(S,b){
+  const p=S.seats[b],mx=maxTrade(S,b);
+  if(mx<1)return [];
+  CR=getRules(S);
+  const vals=p.hand.map(x=>cardOf(x).v),sum=vals.reduce((a,c)=>a+c,0),avg=botAvg(S),high=sum>=avg*vals.length;
+  const rv=rvOf(S)[b];
+  const bad=vals.map((v,k)=>k).filter(k=>k!==rv&&(high?vals[k]<=avg-0.5:vals[k]>=avg+0.5))
+    .sort((x,y)=>high?vals[x]-vals[y]:vals[y]-vals[x]);
+  if(!bad.length||Math.random()<0.15)return [];
+  return bad.slice(0,Math.min(mx,Math.random()<0.5?1:2));
+}
+let botPlan={key:'',due:0};
+function botNeed(S,b){
+  const now=Date.now(),me=1-b;
+  if(S.prop&&S.prop.from!==b)return {key:'prop:'+S.prop.ts,at:now,wait:botRand(1200,2800),run:()=>respondBet(b,true)};
+  if(S.refund&&S.refund.from!==b)return {key:'rf:'+S.refund.ts,at:now,wait:botRand(1200,2800),run:()=>respondRefund(b,true)};
+  if(S.prop||S.refund)return null;
+  if(S.status==='playing'){
+    const p=S.seats[b];
+    if(S.phase==='trade'){
+      if(p.acted||p.done)return null;
+      const rl=getRules(S);
+      if(rl.reveal==='pick'&&S.turn===1&&(rvOf(S)[0]<0||rvOf(S)[1]<0)){
+        if(rvOf(S)[me]>=0)return null;
+        return {key:'rv:'+S.id,at:now,wait:botRand(1500,3500),run:()=>pickReveal(b,Math.floor(Math.random()*S.seats[me].hand.length))};
+      }
+      return {key:'tr:'+S.id+':'+S.turn+':'+p.traded,at:now,wait:botRand(2200,6000),run:()=>{
+        const idx=botTradeIdx(S,b);
+        if(idx.length)doTrade(b,idx);else doDirect(b);
+      }};
+    }
+    if(S.phase==='parity'){
+      if(pickerOf(S)!==b||S.seats[0].parity||S.seats[1].parity)return null;
+      return {key:'pa:'+S.deadline,at:S.deadline-CHOICE_MS,wait:botRand(1500,4500),run:()=>pickParity(b,Math.random()<0.5?'par':'impar')};
+    }
+    if(S.phase==='choose'){
+      if(S.fm||S.win!==b)return null;
+      return {key:'ch:'+S.deadline,at:S.deadline-CHOICE_MS,wait:botRand(1800,5000),run:()=>{
+        CR=getRules(S);
+        const c=seatSum(S,b)>=botAvg(S)*S.seats[b].hand.length?'vida':'morte';
+        commit((X,W)=>{if(X.status!=='playing'||X.phase!=='choose'||X.win!==b)return false;applyChoice(X,c,W);},true);
+      }};
+    }
+    return null;
+  }
+  if(S.status==='finished'&&!S.seats.some(x=>!x.uid||x.left)){
+    const rm=S.rematch||[false,false];
+    if(rm[b])return null;
+    return {key:'fin:'+S.v,at:S.ts||now,wait:rm[me]?botRand(500,1200):botRand(2500,5000),run:()=>playAgain(b)};
+  }
+  return null;
+}
+setInterval(()=>{
+  if(!fs||!mine||busy)return;
+  const S=tables[mine.tid];
+  if(!S||!S.seats){return;}
+  const bw=$('#w_bot');if(bw&&bw.classList.contains('on')&&S.status!=='open')bw.classList.remove('on');
+  const b=1-mine.seat,bs=S.seats[b];
+  if(!bs||!bs.uid||bs.left||!isBotDev(bs.dev)){botPlan.key='';return;}
+  const nd=botNeed(S,b);
+  if(!nd){botPlan.key='';return;}
+  if(botPlan.key!==nd.key){botPlan.key=nd.key;botPlan.due=Math.max(Date.now(),nd.at)+nd.wait;}
+  if(Date.now()<botPlan.due)return;
+  botPlan.due=Date.now()+2000;   /* se a jogada não passar, tenta de novo daqui a pouco */
+  nd.run();
+},400);
 
 /* ---------- início ---------- */
 async function boot(){
