@@ -447,20 +447,129 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
 .pinfo span{color:var(--muted)}.pinfo b{text-align:right}
 #profbody h4{font-family:Georgia,serif;color:var(--gold);margin:14px 0 4px;font-size:1rem;text-align:center}
 #profbody .pnote{color:var(--muted);font-size:.74rem;text-align:center;margin:4px 0}
+
+/* ===== menu lateral, amigos, retráteis ===== */
+#sndbar .sp{flex:1}
+#coins{margin-right:0}
+#menubtn{margin-right:2px;font-size:1.15rem;line-height:1}
+.bdg{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;border-radius:99px;background:#e0505f;color:#fff;font:700 .66rem/17px var(--fb);font-style:normal;text-align:center;padding:0 4px;pointer-events:none}
+.bdg:empty{display:none}
+#sndgrp{display:flex;gap:8px}
+#sndbar.col #sndgrp{display:none}
+#sndtog{font-size:1.2rem;line-height:1;transition:transform .2s}
+#sndbar.col #sndtog{transform:rotate(180deg)}
+.pbrow{text-align:center;margin:0 0 8px}
+.vtog{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;background:#0007;border:1px solid #e8c35a2a;border-radius:14px;padding:6px 12px;margin:0 0 4px;color:var(--ink);font:600 .8rem var(--fb);letter-spacing:.04em;cursor:pointer}
+.vtog em{font-style:normal;color:#4fd08a;margin-left:8px;font-size:.72rem}
+.vtog i{font-style:normal;font-size:.8rem;color:var(--gold);transition:transform .2s}
+#voicebar.col .vtog i{transform:rotate(180deg)}
+#voicebar.col .vp{display:none}
+#voicebar.col .vtog{margin:0}
+
+#drawer{position:fixed;inset:0;z-index:285;visibility:hidden;pointer-events:none;transition:visibility 0s .3s}
+#drawer.on{visibility:visible;pointer-events:auto;transition-delay:0s}
+.drw-bg{position:absolute;inset:0;background:#000b;opacity:0;transition:opacity .28s}
+#drawer.on .drw-bg{opacity:1}
+.drw-pan{position:absolute;top:0;bottom:0;left:0;width:min(88vw,350px);display:flex;flex-direction:column;background:linear-gradient(#0f4a34,#072a1d);
+  border-right:2px solid var(--gold);box-shadow:8px 0 40px #000c;transform:translateX(-104%);transition:transform .3s ease;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+#drawer.on .drw-pan{transform:none}
+.drw-head{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px 10px}
+.drw-user{display:flex;align-items:center;gap:9px;min-width:0}
+.drw-user b{font-family:var(--fd);color:var(--gold);font-size:1.05rem;letter-spacing:.06em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drw-tabs{flex:none;margin:0 14px 4px}
+.cnt{font-style:normal;margin-left:6px;background:#e0505f;color:#fff;border-radius:99px;padding:1px 7px;font-size:.7rem}
+.cnt:empty{display:none}
+.drw-body{flex:1;min-height:0;overflow-y:auto;padding:10px 14px 14px}
+.drw-foot{flex:none;padding:10px 14px 14px;border-top:1px solid #e8c35a30}
+.drw-foot .btn{margin-top:0}
+.dsec{margin:0 0 20px}
+.dsec h4{font-family:var(--fd);color:var(--gold);margin:0 0 8px;font-size:.88rem;letter-spacing:.1em}
+.dsec h4 small{font-family:var(--fb);color:var(--muted);font-weight:500;letter-spacing:.02em;margin-left:4px}
+.dsec input[type=text],.dsec input[type=password]{width:100%;padding:11px 14px;border-radius:12px;border:1px solid #e8c35a40;background:#00000066;color:var(--ink);font:500 1rem var(--fb);margin-top:6px;outline:none}
+.dsec input:focus{border-color:var(--gold);box-shadow:0 0 0 3px #e8c35a30}
+.dsec .gmsg{text-align:left}
+.odot{display:inline-block;width:11px;height:11px;border-radius:50%;background:#6b7a72;flex:none}
+.odot.on{background:#3ddc84;box-shadow:0 0 0 3px #3ddc8444,0 0 8px #3ddc84}
+.frow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #ffffff1a}
+.frow .fn{flex:1;min-width:0}
+.frow .fn b{display:block;font-size:.94rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frow .fn small{color:var(--muted);font-size:.72rem}
+.frow .fn small.on{color:#7be9a8}
+.fbt{border:1px solid #e8c35a66;background:#0007;color:var(--ink);border-radius:99px;padding:6px 11px;font-size:.76rem;font-weight:700;cursor:pointer;font-family:var(--fb);flex:none}
+.fbt.ok{background:var(--gold);color:#2a1d00;border-color:var(--gold)}
+.fbt.no{color:#ff8a94;border-color:#ff8a9488}
+.fempty{color:var(--muted);font-size:.84rem;text-align:center;padding:8px 0}
+@media (hover:hover){.fbt:hover,.vtog:hover{filter:brightness(1.2)}}
+
+/* seletor de amigos (mesa privada / convite) */
+.fpick{margin-top:2px;text-align:left}
+.fpick .fps{margin-top:0}
+.fpl{max-height:176px;overflow-y:auto;margin-top:8px;border:1px solid #e8c35a30;border-radius:12px;background:#0005}
+.fpr{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;background:transparent;border:0;border-bottom:1px solid #ffffff14;color:var(--ink);font:600 .95rem var(--fb);cursor:pointer;text-align:left}
+.fpr:last-child{border-bottom:0}
+.fpr span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fpr small{color:var(--muted);font-weight:500;font-size:.72rem}
+.fpr.sel{background:#e8c35a2e;box-shadow:inset 3px 0 0 var(--gold)}
+.fpr.sel:after{content:"✓";color:var(--gold);font-weight:800}
+.fpl .fempty{padding:12px 10px}
+.fpl .fempty button{margin-top:8px}
+
+/* menu = lista de opções; cada opção abre uma janela */
+.dnav{flex:1;min-height:0;overflow-y:auto;padding:8px 14px}
+.nv{display:flex;align-items:center;gap:12px;width:100%;padding:14px 12px;margin:0 0 8px;background:#0006;border:1px solid #e8c35a30;border-radius:14px;color:var(--ink);font:600 .98rem var(--fb);cursor:pointer;text-align:left}
+.nv i{font-style:normal;font-size:1.2rem;flex:none}
+.nv span{flex:1;min-width:0}
+.nv:after{content:"›";color:var(--gold);font-size:1.3rem;line-height:1}
+.nv:active{transform:translateY(1px)}
+.nv.out{border-color:#c8202f88;color:#ff8a94;margin:0}
+.nv.out:after{content:none}
+.drw-foot .nv{margin:0}
+.nv .cnt{margin-left:0}
+@media (hover:hover){.nv:hover{filter:brightness(1.2)}}
+.mw{position:fixed;inset:0;z-index:290;display:none;align-items:center;justify-content:center;padding:18px;background:#000b}
+.mw.on{display:flex;animation:pop .25s ease}
+.mw .wbox{max-height:90vh;max-height:90dvh}
+.mw .dsec:last-child{margin-bottom:0}
+
+/* menu minimalista: estreito, sem ícones, linhas finas */
+.drw-pan{width:min(56vw,190px);box-shadow:4px 0 24px #000a}
+.drw-head{padding:10px 10px 8px}
+.drw-user{gap:7px}
+.drw-user b{font-size:.82rem;letter-spacing:.04em}
+.drw-head .rx{width:26px;height:26px;font-size:.8rem}
+.odot{width:9px;height:9px}
+.dnav{padding:4px 0}
+.nv{padding:9px 12px;margin:0;background:transparent;border:0;border-top:1px solid #ffffff14;border-radius:0;font:500 .8rem var(--fb);letter-spacing:.02em;gap:6px}
+.nv:last-child{border-bottom:1px solid #ffffff14}
+.nv:after{content:none}
+.nv:active{transform:none;background:#ffffff10}
+.nv.out{border:0;border-top:1px solid #ffffff14;padding:10px 12px}
+.drw-foot{padding:0;border-top:0}
+.nv .cnt{font-size:.62rem;padding:0 6px;line-height:1.5}
+
+/* amigos direto no menu */
+.dfh{margin-top:6px;padding:9px 12px 3px;border-top:1px solid #ffffff14;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:#d9c27a;font-weight:600}
+.dfh small{font-size:.6rem;letter-spacing:.04em;text-transform:none;color:#7be9a8;font-weight:500}
+.dfr{display:flex;align-items:center;gap:8px;padding:5px 12px}
+.dfr span{flex:1;min-width:0;font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dfr .oplink{color:var(--ink);text-decoration:none}
+.dfr .odot:not(.on)+span{color:var(--muted)}
+#dfl .fempty{padding:4px 12px;font-size:.74rem;text-align:left}
+#dfmore{border:0!important;color:var(--gold);font-size:.74rem;padding:7px 12px}
 </style>
 </head>
 <body>
 <div id="fl"></div>
 <div id="app">
-  <div id="sndbar"><span class="pill" id="coins">🪙 0</span><button class="sb rb" id="br">Regras</button><button class="sb rb" id="bm" aria-label="Música">Música</button><button class="sb rb" id="bs" aria-label="Efeitos sonoros">Som</button></div>
+  <div id="sndbar"><button class="sb" id="menubtn" aria-label="Abrir menu">☰<i class="bdg" id="menubdg"></i></button><span class="pill" id="coins">🪙 0</span><span class="sp"></span><button class="sb rb" id="br">Regras</button><span id="sndgrp"><button class="sb rb" id="bm" aria-label="Música">Música</button><button class="sb rb" id="bs" aria-label="Efeitos sonoros">Som</button></span><button class="sb" id="sndtog" aria-label="Recolher música e som">›</button></div>
   <div id="top">
     <h1>VIDA <span class="m">ou</span> MORTE</h1>
     <p class="sub">Escolha uma mesa e sente-se. Cada mesa tem 2 vagas.</p>
     <div class="panel"><label>Seu apelido<input type="text" id="nick" maxlength="16" placeholder="Digite seu apelido"></label></div>
-    <div class="pbrow"><button class="pbtn" id="privopen">Criar mesa privada</button></div>
   </div>
   <div id="notice"></div>
-  <div id="voicebar"><div class="vp">
+  <div id="voicebar"><button class="vtog" id="vtog" type="button" aria-label="Mostrar ou ocultar o chat de voz"><span>🎙 Chat de voz<em id="vlive"></em></span><i>▲</i></button><div class="vp">
     <div class="vu" id="vume"><i class="vdot"></i><span id="vnme">Você</span></div>
     <div class="vu" id="vuop"><i class="vdot"></i><span id="vnop">Oponente</span></div>
     <div class="vctl"><button class="vb" id="vjoin">Entrar na voz</button><button class="vb alt" id="vmute" style="display:none">Mic</button><button class="vb alt" id="vdeaf" style="display:none">Som</button><button class="vb red" id="vleave" style="display:none">✕</button></div>
@@ -468,6 +577,67 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
   </div><audio id="vaudio" autoplay playsinline></audio></div>
   <div id="view"></div>
 </div>
+<div id="drawer" aria-hidden="true"><div class="drw-bg" id="drwbg"></div>
+<aside class="drw-pan" role="dialog" aria-label="Menu">
+  <div class="drw-head"><div class="drw-user"><i class="odot" id="dme"></i><b id="dname">Visitante</b></div><button class="rx" id="drwx" aria-label="Fechar menu" style="position:static">✕</button></div>
+  <nav class="dnav">
+    <button class="nv" data-w="w_acc"><span>Configurações da conta</span></button>
+    <button class="nv" data-w="w_add"><span>Adicionar amigo</span></button>
+    <button class="nv" data-w="w_req"><span>Pedidos de amizade</span><em class="cnt" id="frbadge"></em></button>
+    <div class="dfh">Amigos<small id="dfsum"></small></div>
+    <div id="dfl"><div class="fempty">Nenhum amigo ainda.</div></div>
+    <button class="nv" id="dfmore" data-w="w_fr" style="display:none"><span>Ver mais amigos</span></button>
+  </nav>
+  <div class="drw-foot"><button class="nv out" id="logout"><span>Sair da conta</span></button></div>
+</aside></div>
+
+<div class="mw" id="w_acc" role="dialog" aria-label="Configurações da conta"><div class="wbox">
+  <button class="rx" data-wx aria-label="Fechar">✕</button>
+  <h3>Configurações da conta</h3>
+  <div class="dsec"><h4>Nome de usuário</h4>
+    <label>Novo nome<input type="text" id="pf_name" maxlength="16" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="seu usuário"></label>
+    <label id="pf_c1" style="display:none;margin-top:10px">Senha atual<input type="password" id="pf_cur1" maxlength="64" autocomplete="current-password" placeholder="para confirmar"></label>
+    <div class="gmsg" id="pf_nmsg"></div>
+    <button class="btn" id="pf_savename">Salvar nome</button>
+  </div>
+  <div class="dsec"><h4 id="pf_ptitle">Senha</h4>
+    <p class="uhint" id="pf_phint" style="text-align:left;margin:0 0 8px"></p>
+    <label id="pf_c2" style="display:none">Senha atual<input type="password" id="pf_cur2" maxlength="64" autocomplete="current-password" placeholder="sua senha atual"></label>
+    <label style="display:block;margin-top:10px">Nova senha<input type="password" id="pf_new" maxlength="64" autocomplete="new-password" placeholder="mínimo 6 caracteres"></label>
+    <div class="gmsg" id="pf_pmsg"></div>
+    <button class="btn" id="pf_savepw">Salvar senha</button>
+  </div>
+</div></div>
+
+<div class="mw" id="w_fr" role="dialog" aria-label="Meus amigos"><div class="wbox">
+  <button class="rx" data-wx aria-label="Fechar">✕</button>
+  <h3>Meus amigos</h3>
+  <div class="wuser" id="fr_sum"></div>
+  <div id="fr_list" style="margin-top:8px"></div>
+</div></div>
+
+<div class="mw" id="w_add" role="dialog" aria-label="Adicionar amigo"><div class="wbox">
+  <button class="rx" data-wx aria-label="Fechar">✕</button>
+  <h3>Adicionar amigo</h3>
+  <p class="uhint" style="margin:0 0 8px">Digite o nome de usuário de quem você quer adicionar. Ele recebe um pedido e precisa aceitar.</p>
+  <label>Nome de usuário<input type="text" id="fr_to" maxlength="17" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="ex: sanm"></label>
+  <div class="gmsg" id="frmsg"></div>
+  <button class="btn" id="fr_send">Enviar pedido</button>
+</div></div>
+
+<div class="mw" id="w_req" role="dialog" aria-label="Pedidos de amizade"><div class="wbox">
+  <button class="rx" data-wx aria-label="Fechar">✕</button>
+  <h3>Pedidos de amizade</h3>
+  <div class="dsec"><h4>Recebidos</h4><div id="fr_in"></div></div>
+  <div class="dsec"><h4>Enviados</h4><div id="fr_out"></div></div>
+</div></div>
+
+<div class="mw" id="w_out" role="dialog" aria-label="Sair da conta"><div class="wbox">
+  <button class="rx" data-wx aria-label="Fechar">✕</button>
+  <h3>Sair da conta</h3>
+  <p class="hint" id="lo_txt" style="text-align:center"></p>
+  <div class="row2"><button class="btn ghost" id="lo_no">Cancelar</button><button class="btn morte" id="lo_yes">Sair</button></div>
+</div></div>
 <div id="rules" role="dialog" aria-label="Regras do jogo"><div class="rbox">
   <button class="rx" id="rx" aria-label="Fechar">✕</button>
   <div class="rview"><div class="rtrack" id="rtrack">
@@ -485,16 +655,18 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
 <div id="privbox" role="dialog" aria-label="Mesa privada"><div class="bbox" style="position:relative">
   <button class="rx" id="privx" aria-label="Fechar">✕</button>
   <h3>Mesa privada</h3>
-  <p class="hint">Só o jogador convidado consegue entrar. Você escolhe a aposta.</p>
+  <p class="hint">Só o amigo convidado consegue entrar. Você escolhe a aposta.</p>
   <div style="text-align:left">
     <label>Aposta de cada jogador (🪙)<input type="number" id="pbet" min="10" step="1" inputmode="numeric" value="50"></label>
     <div class="chips" id="pchips"><button data-v="50">50</button><button data-v="100">100</button><button data-v="150">150</button><button data-v="200">200</button></div>
-    <label style="display:block;margin-top:10px">Convidar jogador (nome de usuário)<input type="text" id="pto" maxlength="17" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="ex: sanm"></label>
+    <label style="display:block;margin-top:10px">Convidar um amigo</label>
+    <div class="fpick" id="ppick" data-for="pto"><input type="text" class="fps" maxlength="17" autocomplete="off" spellcheck="false" placeholder="Buscar entre seus amigos"><div class="fpl"></div></div>
+    <input type="hidden" id="pto" value="">
   </div>
   <div class="gmsg" id="pmsg"></div>
   <button type="button" class="rbtn" id="ropen">⚙ Regras personalizadas</button>
   <button class="btn" id="psend">Criar mesa e enviar convite</button>
-  <p class="hint" style="margin-top:10px">O convidado recebe um aviso na tela e, ao aceitar, entra direto na mesa.</p>
+  <p class="hint" style="margin-top:10px">O amigo recebe um aviso na tela e, ao aceitar, entra direto na mesa.</p>
 </div></div>
 <div id="rulebox" role="dialog" aria-label="Regras personalizadas"><div class="bbox" style="position:relative">
   <button class="rx" id="rulex" aria-label="Fechar">✕</button>
@@ -503,7 +675,7 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
   <div id="rlist"></div>
   <div class="row2"><button class="btn ghost" id="rreset">Padrão</button><button class="btn" id="rok">Concluir</button></div>
 </div></div>
-<div id="invbox" role="dialog" aria-label="Convidar"><div class="bbox"><h3>Convidar jogador</h3><p>Digite o nome de usuário de quem vai entrar na mesa.</p><input type="text" id="invto" maxlength="17" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="nome de usuário"><div class="gmsg" id="invmsg"></div><div class="row2"><button class="btn ghost" id="invno">Cancelar</button><button class="btn" id="invyes">Enviar</button></div></div></div>
+<div id="invbox" role="dialog" aria-label="Convidar"><div class="bbox"><h3>Convidar amigo</h3><p>Escolha qual amigo vai entrar na mesa.</p><div class="fpick" id="ipick" data-for="invto"><input type="text" class="fps" maxlength="17" autocomplete="off" spellcheck="false" placeholder="Buscar entre seus amigos"><div class="fpl"></div></div><input type="hidden" id="invto" value=""><div class="gmsg" id="invmsg"></div><div class="row2"><button class="btn ghost" id="invno">Cancelar</button><button class="btn" id="invyes">Enviar</button></div></div></div>
 <div id="userbox" role="dialog" aria-label="Nome de usuário"><div class="ubox">
   <h3>Seu nome de usuário</h3>
   <div class="wtabs" id="utabs"><button class="on" data-ut="new">Criar usuário</button><button data-ut="login">Já tenho conta</button></div>
@@ -1404,7 +1576,8 @@ function lobbyHTML(){
   }).join('');
   const broke=(wallet.ok&&wallet.coins<=0)?`<div class="warn">Você está sem moedas. Depois de 30 minutos zerado, o sistema dá <b>🪙${GRANT_COINS}</b> (uma vez).</div>`:'';
   const bal=`<div class="panel wal"><span>Suas moedas<em class="wgo">Toque para abrir a carteira</em></span><div><b>🪙 ${wallet.ok?fmtC(wallet.coins):'...'}</b><small id="walt"></small></div></div>`;
-  return bal+warn+broke+`<div class="lgrid">${cards}</div>`;
+  const priv=`<div class="pbrow"><button class="pbtn" id="privopen">Criar mesa privada</button></div>`;
+  return bal+priv+warn+broke+`<div class="lgrid">${cards}</div>`;
 }
 
 /* mesa: baralho + descarte */
@@ -1945,6 +2118,7 @@ function paintVoice(){
   $('#vmute').textContent=V.muted?'Mutado':'Mic';
   $('#vdeaf').textContent=V.deaf?'Mudo':'Som';
   $('#vst').textContent=on?V.state:'';
+  const vl=$('#vlive');if(vl)vl.textContent=on?'● ao vivo':'';
 }
 
 function watchAudio(stream,who){
@@ -2099,6 +2273,7 @@ function setUser(n){
   try{localStorage.setItem('vom_user',n);}catch(e){}
   const nk=$('#nick');if(nk&&!nk.value)nk.value=n.slice(0,16);
   watchHistory();paintWal();
+  try{pingOnline();paintDrawer();}catch(e){}
 }
 /* usernames/<nome sem acento, minúsculo> = {dev, name}: um nome só pode pertencer a um aparelho */
 async function claimUsername(name){
@@ -2181,7 +2356,9 @@ async function loginAcct(){
   loggingIn=true;$('#ulogbtn').disabled=true;er.textContent='';
   try{
     const au=firebase.auth();
-    const cred=await au.signInWithEmailAndPassword(emailFor(n),pw);
+    let em=emailFor(n);   /* quem trocou de nome guarda o e-mail de login original no cadastro do nome */
+    try{const un=await fs.doc('usernames/'+userKey(n)).get();if(un.exists&&un.data().email)em=un.data().email;}catch(e){}
+    const cred=await au.signInWithEmailAndPassword(em,pw);
     const ac=await fs.doc('accounts/'+cred.user.uid).get();
     if(!ac.exists||!ac.data().dev){
       await au.signOut();er.textContent='Esta conta não tem dados salvos. Recarregando...';
@@ -2508,6 +2685,8 @@ async function createPrivate(){
   const bet=Math.floor(parseInt($('#pbet').value,10)||0),to=($('#pto').value||'').trim().replace(/^@/,'');
   if(bet<MIN_BET){m('A aposta mínima é '+MIN_BET+'.');return;}
   if(bet>wallet.coins){m('Você só tem 🪙'+wallet.coins+'.');return;}
+  if(!to){m('Escolha um amigo para convidar.');return;}
+  if(!isFriendName(to)){m('Você só pode convidar amigos. Adicione-o no menu ☰.');return;}
   creating=true;busy=true;$('#psend').disabled=true;gmsg('Criando mesa...',true,'pmsg');
   try{
     const d=await lookupUser(to);if(d.err){m(d.err);return;}
@@ -2522,7 +2701,7 @@ async function createPrivate(){
     });
     if(r==='use'){m('Sua mesa privada anterior ainda está encerrando. Tente em instantes.');return;}
     await writeInvite(d,tid,bet);
-    gmsg('',true,'pmsg');$('#pto').value='';$('#privbox').classList.remove('on');Snd.sfx('sit');
+    gmsg('',true,'pmsg');$('#pto').value='';$('#ppick .fps').value='';$('#privbox').classList.remove('on');Snd.sfx('sit');
   }catch(e){m('Não foi possível criar a mesa: '+((e&&e.message)||e));}
   finally{creating=false;busy=false;$('#psend').disabled=false;}
 }
@@ -2530,7 +2709,7 @@ function cancelInvite(){
   fs.doc('invites/inv_'+DEV).update({status:'cancelled'}).catch(()=>{});
   if(mine)fs.doc('tables/'+mine.tid).update({inv:''}).catch(()=>{});
 }
-function openInvBox(){$('#invmsg').textContent='';$('#invbox').classList.add('on');setTimeout(()=>{const e=$('#invto');if(e)e.focus();},200);}
+function openInvBox(){$('#invmsg').textContent='';$('#invto').value='';$('#ipick .fps').value='';paintPick('ipick');$('#invbox').classList.add('on');}
 
 function paintInvite(){
   const bx=$('#invitebox');if(!bx)return;
@@ -2557,10 +2736,12 @@ async function acceptInvite(iv){
 
 /* abas do lobby */
 function applyTab(){}
-$('#privopen').onclick=()=>{Snd.sfx('click');
+document.addEventListener('click',e=>{   /* o botão é redesenhado junto com o lobby, por isso delegação */
+  if(!(e.target.closest&&e.target.closest('#privopen')))return;
+  Snd.sfx('click');
   if(!USER&&db&&uid&&wallet.ok){askUser('');return;}
   gmsg('',true,'pmsg');$('#privbox').classList.add('on');
-};
+});
 $('#privx').onclick=()=>$('#privbox').classList.remove('on');
 $('#privbox').addEventListener('pointerdown',e=>{if(e.target.id==='privbox')$('#privbox').classList.remove('on');});
 document.querySelectorAll('#pchips button').forEach(b=>{b.onclick=()=>{$('#pbet').value=b.dataset.v;};});
@@ -2579,19 +2760,307 @@ $('#ropen').onclick=()=>{Snd.sfx('click');paintRules();$('#rulebox').classList.a
 $('#rulex').onclick=$('#rok').onclick=()=>$('#rulebox').classList.remove('on');
 $('#rreset').onclick=()=>{Object.assign(crules,DRL);paintRules();};
 $('#psend').onclick=createPrivate;
-$('#pto').addEventListener('keydown',e=>{if(e.key==='Enter')createPrivate();});
 $('#invno').onclick=()=>$('#invbox').classList.remove('on');
 $('#invyes').onclick=async()=>{
   const S=mine&&tables[mine.tid];if(!S||!isPriv(S.id)||S.status!=='open')return;
   try{
-    const d=await lookupUser(($('#invto').value||'').trim().replace(/^@/,''));
+    const nm=($('#invto').value||'').trim();
+    if(!nm){gmsg('Escolha um amigo para convidar.',false,'invmsg');return;}
+    if(!isFriendName(nm)){gmsg('Você só pode convidar amigos.',false,'invmsg');return;}
+    const d=await lookupUser(nm);
     if(d.err){gmsg(d.err,false,'invmsg');return;}
     await writeInvite(d,S.id,S.bet);
     await fs.doc('tables/'+S.id).update({inv:d.dev});
-    $('#invbox').classList.remove('on');$('#invto').value='';
+    $('#invbox').classList.remove('on');$('#invto').value='';$('#ipick .fps').value='';
   }catch(e){gmsg('Não foi possível enviar: '+((e&&e.message)||e),false,'invmsg');}
 };
 setInterval(()=>{paintInvite();renderAll();},2000);
+
+
+/* ============================================================
+   MENU LATERAL: perfil, amigos, sair da conta + painéis retráteis
+   ============================================================ */
+const ONLINE_MS=75000;
+const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+
+/* ---- painéis retráteis: música/som e chat de voz ---- */
+(function(){
+  const sb=$('#sndbar'),vb=$('#voicebar');
+  const pS=()=>{const c=sb.classList.contains('col');$('#sndtog').setAttribute('aria-label',c?'Mostrar música e som':'Recolher música e som');};
+  const pV=()=>{const c=vb.classList.contains('col');$('#vtog').setAttribute('aria-expanded',String(!c));};
+  sb.classList.toggle('col',lsGet('vom_sndcol')==='1');pS();
+  vb.classList.toggle('col',lsGet('vom_vcol')==='1');pV();
+  $('#sndtog').onclick=()=>{sb.classList.toggle('col');lsSet('vom_sndcol',sb.classList.contains('col')?'1':'0');pS();};
+  $('#vtog').onclick=()=>{vb.classList.toggle('col');lsSet('vom_vcol',vb.classList.contains('col')?'1':'0');pV();};
+})();
+
+/* ---- online: online/<aparelho> = {name, ts}; renovado a cada 30 s ---- */
+function pingOnline(off){
+  if(!fs||!DEV||!USER)return;
+  const d={dev:DEV,name:USER,ts:Date.now()};if(off)d.off=true;
+  fs.doc('online/'+DEV).set(d).catch(()=>{});
+}
+setInterval(()=>{if(!document.hidden)pingOnline();},30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pingOnline();});
+window.addEventListener('pagehide',()=>pingOnline(true));
+
+/* ---- amigos: friendreqs/<de>_<para> = {fromDev,fromName,toDev,toName,status:'pending'|'accepted'} ---- */
+const FR={inn:[],out:[],wat:{},onl:{},started:false,err:'',tab:'prof',firstIn:true,seen:new Set(),rem:'',remT:0,sending:false};
+const frAll=()=>FR.inn.concat(FR.out);
+const frIncoming=()=>FR.inn.filter(r=>r.status==='pending');
+const frOutgoing=()=>FR.out.filter(r=>r.status==='pending');
+const frName=(dev,fb)=>(FR.onl[dev]&&FR.onl[dev].name)||fb||'Jogador';
+const isOn=d=>{const o=FR.onl[d];return !!(o&&!o.off&&o.ts&&Date.now()-o.ts<ONLINE_MS);};
+function frFriends(){
+  const seen=new Set(),out=[];
+  frAll().filter(r=>r.status==='accepted').forEach(r=>{
+    const me=r.fromDev===DEV,dev=me?r.toDev:r.fromDev;
+    if(seen.has(dev))return;seen.add(dev);
+    out.push({id:r.id,dev,name:me?r.toName:r.fromName});
+  });
+  return out;
+}
+function frStart(){
+  if(!fs||!DEV||FR.started)return;FR.started=true;
+  const err=e=>{FR.err=(e&&e.message)||'erro';paintFriends();};
+  fs.collection('friendreqs').where('toDev','==',DEV).onSnapshot(sn=>{
+    FR.inn=sn.docs.map(d=>Object.assign({id:d.id},d.data()));
+    if(!FR.firstIn)FR.inn.forEach(r=>{if(r.status==='pending'&&!FR.seen.has(r.id)){toast('@'+r.fromName+' quer ser seu amigo!',true);}});
+    FR.inn.forEach(r=>FR.seen.add(r.id));FR.firstIn=false;FR.err='';frChanged();
+  },err);
+  fs.collection('friendreqs').where('fromDev','==',DEV).onSnapshot(sn=>{
+    FR.out=sn.docs.map(d=>Object.assign({id:d.id},d.data()));FR.err='';frChanged();
+  },err);
+  setInterval(()=>{paintBadge();if($('#drawer').classList.contains('on'))paintFriends();},15000);
+}
+function frChanged(){
+  const want=new Set(frFriends().map(f=>f.dev));
+  Object.keys(FR.wat).forEach(d=>{if(!want.has(d)){FR.wat[d]();delete FR.wat[d];delete FR.onl[d];}});
+  want.forEach(d=>{if(!FR.wat[d])FR.wat[d]=fs.doc('online/'+d).onSnapshot(sn=>{FR.onl[d]=sn.exists?sn.data():null;paintFriends();paintBadge();},()=>{});});
+  paintFriends();paintBadge();
+}
+function paintBadge(){
+  const n=frIncoming().length,b=$('#menubdg');if(b)b.textContent=n?String(n):'';
+  const f=$('#frbadge');if(f)f.textContent=n?String(n):'';
+}
+const lastSeen=d=>{const o=FR.onl[d];return (o&&o.ts)?'visto '+ago(o.ts):'Offline';};
+function paintFriends(){
+  paintBadge();paintPicks();
+  if(!$('#fr_list')||!USER)return;
+  const inc=frIncoming(),outg=frOutgoing();
+  $('#fr_in').innerHTML=inc.map(r=>`<div class="frow"><div class="fn"><b class="oplink" data-dev="${esc(r.fromDev)}" data-name="${esc(r.fromName)}">@${esc(frName(r.fromDev,r.fromName))}</b><small>quer ser seu amigo</small></div><button class="fbt ok" data-fa="acc" data-id="${esc(r.id)}">Aceitar</button><button class="fbt no" data-fa="del" data-id="${esc(r.id)}">Recusar</button></div>`).join('')||'<div class="fempty">Nenhum pedido recebido.</div>';
+  $('#fr_out').innerHTML=outg.map(r=>`<div class="frow"><div class="fn"><b>@${esc(r.toName)}</b><small>aguardando resposta</small></div><button class="fbt no" data-fa="del" data-id="${esc(r.id)}">Cancelar</button></div>`).join('')||'<div class="fempty">Nenhum pedido enviado.</div>';
+  const fl=frFriends().map(f=>({id:f.id,dev:f.dev,name:frName(f.dev,f.name),on:isOn(f.dev)})).sort((a,b)=>(b.on-a.on)||a.name.localeCompare(b.name));
+  const on=fl.filter(f=>f.on).length;
+  $('#fr_sum').textContent=fl.length?`${fl.length} ${fl.length===1?'amigo':'amigos'} · ${on} online`:'';
+  const dl=$('#dfl');
+  if(dl){
+    dl.innerHTML=fl.slice(0,5).map(f=>`<div class="dfr"><i class="odot${f.on?' on':''}"></i><span class="oplink" data-dev="${esc(f.dev)}" data-name="${esc(f.name)}">${esc(f.name)}</span></div>`).join('')||'<div class="fempty">Nenhum amigo ainda.</div>';
+    $('#dfsum').textContent=on?' · '+on+' online':'';
+    const mb=$('#dfmore');mb.style.display=fl.length?'':'none';
+    mb.firstChild.textContent=fl.length>5?'Ver mais amigos (+'+(fl.length-5)+')':'Gerenciar amigos';
+  }
+  let h=fl.map(f=>`<div class="frow"><i class="odot${f.on?' on':''}"></i><div class="fn"><b class="oplink" data-dev="${esc(f.dev)}" data-name="${esc(f.name)}">${esc(f.name)}</b><small class="${f.on?'on':''}">${f.on?'Online':esc(lastSeen(f.dev))}</small></div><button class="fbt no" data-fa="rem" data-id="${esc(f.id)}">${FR.rem===f.id?'Confirmar?':'Remover'}</button></div>`).join('');
+  if(!fl.length)h=`<div class="fempty">${FR.err?'Não foi possível abrir os amigos. Confira as regras do Firestore (coleções friendreqs e online).':'Você ainda não tem amigos. Envie um pedido acima.'}</div>`;
+  $('#fr_list').innerHTML=h;
+}
+async function sendFriendReq(){
+  if(FR.sending)return;
+  const raw=($('#fr_to').value||'').trim().replace(/^@/,''),k=userKey(raw);
+  if(!USER){gmsg('Defina seu nome de usuário primeiro.',false,'frmsg');return;}
+  if(!k){gmsg('Digite o nome de usuário.',false,'frmsg');return;}
+  FR.sending=true;$('#fr_send').disabled=true;gmsg('',true,'frmsg');
+  try{
+    const u=await fs.doc('usernames/'+k).get();
+    if(!u.exists){gmsg('Usuário não encontrado. Confira o nome.',false,'frmsg');return;}
+    const d=u.data(),nm=d.name||raw;
+    if(d.dev===DEV){gmsg('Você não pode adicionar você mesmo.',false,'frmsg');return;}
+    const ex=frAll().find(r=>r.fromDev===d.dev||r.toDev===d.dev);
+    if(ex&&ex.status==='accepted'){gmsg('Vocês já são amigos.',true,'frmsg');return;}
+    if(ex&&ex.fromDev===DEV){gmsg('Você já enviou um pedido para @'+nm+'.',false,'frmsg');return;}
+    if(ex&&ex.toDev===DEV){   /* ele já tinha pedido: aceitar direto */
+      await fs.doc('friendreqs/'+ex.id).update({status:'accepted',ts:Date.now(),toName:USER});
+      gmsg('@'+nm+' já tinha te enviado um pedido. Agora vocês são amigos!',true,'frmsg');$('#fr_to').value='';return;
+    }
+    await fs.doc('friendreqs/'+DEV+'_'+d.dev).set({fromDev:DEV,fromName:USER,toDev:d.dev,toName:nm,status:'pending',ts:Date.now()});
+    gmsg('Pedido enviado para @'+nm+'.',true,'frmsg');$('#fr_to').value='';
+  }catch(e){gmsg('Não foi possível enviar. Confira as regras do Firestore (coleção friendreqs). '+((e&&e.message)||''),false,'frmsg');}
+  finally{FR.sending=false;$('#fr_send').disabled=false;}
+}
+document.addEventListener('click',async e=>{
+  const b=e.target.closest&&e.target.closest('[data-fa]');if(!b||!fs)return;
+  try{Snd.sfx('click');}catch(x){}
+  const id=b.dataset.id,a=b.dataset.fa;
+  try{
+    if(a==='acc')await fs.doc('friendreqs/'+id).update({status:'accepted',ts:Date.now(),toName:USER});
+    else if(a==='del')await fs.doc('friendreqs/'+id).delete();
+    else if(a==='rem'){
+      if(FR.rem!==id){FR.rem=id;clearTimeout(FR.remT);FR.remT=setTimeout(()=>{FR.rem='';paintFriends();},4000);paintFriends();return;}
+      FR.rem='';await fs.doc('friendreqs/'+id).delete();
+    }
+  }catch(er){toast('Não foi possível concluir: '+((er&&er.message)||er));}
+});
+$('#fr_send').onclick=sendFriendReq;
+$('#fr_to').addEventListener('keydown',e=>{if(e.key==='Enter')sendFriendReq();});
+
+/* ---- perfil: trocar nome de usuário e senha ---- */
+const pwErr=e=>{
+  const c=(e&&e.code)||'';
+  return (c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/invalid-login-credentials')?'Senha atual incorreta.':(c==='auth/requires-recent-login'?'Por segurança, saia e entre de novo na conta e tente outra vez.':authMsg(e));
+};
+function paintProfile(){
+  const p=hasPw();
+  $('#pf_c1').style.display=p?'block':'none';
+  $('#pf_c2').style.display=p?'block':'none';
+  $('#pf_ptitle').textContent=p?'Alterar senha':'Criar senha';
+  $('#pf_phint').textContent=p?'Digite a senha atual e escolha uma nova.':'Sua conta ainda não tem senha. Crie uma para recuperar moedas e histórico em outro aparelho. Não existe recuperação de senha, então anote-a.';
+  $('#pf_savepw').textContent=p?'Alterar senha':'Criar senha';
+  const n=$('#pf_name');if(n){n.placeholder=USER||'seu usuário';}
+}
+function paintDrawer(){
+  const dn=$('#dname');if(!dn)return;
+  dn.textContent=USER||'Visitante';
+  $('#dme').className='odot'+(USER?' on':'');
+  paintProfile();paintFriends();
+}
+async function changeUsername(){
+  if(savingUser)return;
+  const n=($('#pf_name').value||'').trim().replace(/^@/,''),er='pf_nmsg';
+  if(!USER){closeDrawer();askUser('');return;}
+  if(!USER_RE.test(n)){gmsg('Use de 3 a 16 caracteres: letras, números, _ . ou - (começando com letra ou número).',false,er);return;}
+  if(n===USER){gmsg('Esse já é o seu nome de usuário.',false,er);return;}
+  const old=USER,ok=userKey(old),nk=userKey(n),changed=ok!==nk,pw=hasPw();
+  const cu=firebase.auth().currentUser;
+  savingUser=true;$('#pf_savename').disabled=true;gmsg('Salvando...',true,er);
+  let claimed=false;
+  try{
+    if(pw){
+      const cur=$('#pf_cur1').value||'';
+      if(!cur){gmsg('Digite sua senha atual para confirmar.',false,er);return;}
+      try{await cu.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(cu.email,cur));}
+      catch(e){gmsg(pwErr(e),false,er);return;}
+    }
+    const r=await claimUsername(n);
+    if(r==='taken'){gmsg('Esse nome já está em uso por outra pessoa.',false,er);return;}
+    claimed=changed;
+    if(pw){   /* o login continua usando o e-mail original; guardamos qual é no cadastro do novo nome */
+      await fs.doc('usernames/'+nk).update({email:cu.email});
+      await fs.doc('accounts/'+cu.uid).set({user:n},{merge:true});
+    }
+    if(changed)fs.doc('usernames/'+ok).delete().catch(()=>{});
+    setUser(n);
+    frAll().forEach(q=>fs.doc('friendreqs/'+q.id).update(q.fromDev===DEV?{fromName:n}:{toName:n}).catch(()=>{}));
+    $('#pf_name').value='';$('#pf_cur1').value='';gmsg('',true,er);
+    toast('Nome alterado para '+n+'.',true);
+  }catch(e){
+    if(claimed)fs.doc('usernames/'+nk).delete().catch(()=>{});
+    gmsg('Não foi possível salvar. '+((e&&e.message)||e),false,er);
+  }finally{savingUser=false;$('#pf_savename').disabled=false;}
+}
+async function changePassword(){
+  if(savingAcct)return;
+  const nw=$('#pf_new').value||'',er='pf_pmsg';
+  if(!USER){closeDrawer();askUser('');return;}
+  if(nw.length<6){gmsg('A nova senha precisa ter pelo menos 6 caracteres.',false,er);return;}
+  savingAcct=true;$('#pf_savepw').disabled=true;gmsg('Salvando...',true,er);
+  try{
+    if(hasPw()){
+      const cu=firebase.auth().currentUser,cur=$('#pf_cur2').value||'';
+      if(!cur){gmsg('Digite sua senha atual.',false,er);return;}
+      try{await cu.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(cu.email,cur));}
+      catch(e){gmsg(pwErr(e),false,er);return;}
+      await cu.updatePassword(nw);
+      toast('Senha alterada!',true);
+    }else{
+      await protect(USER,nw);
+      toast('Conta protegida com senha!',true);
+    }
+    $('#pf_new').value='';$('#pf_cur2').value='';gmsg('',true,er);paintProfile();paintAcct();
+  }catch(e){gmsg(pwErr(e),false,er);}
+  finally{savingAcct=false;$('#pf_savepw').disabled=false;}
+}
+$('#pf_savename').onclick=changeUsername;
+$('#pf_savepw').onclick=changePassword;
+$('#pf_name').addEventListener('keydown',e=>{if(e.key==='Enter')changeUsername();});
+$('#pf_new').addEventListener('keydown',e=>{if(e.key==='Enter')changePassword();});
+
+
+/* ---- seletor de amigos: só amigos podem ser convidados ---- */
+const isFriendName=n=>{const k=userKey(n);return !!k&&frFriends().some(f=>userKey(frName(f.dev,f.name))===k);};
+function paintPick(id){
+  const box=$('#'+id);if(!box)return;
+  const hid=$('#'+box.dataset.for),fps=box.querySelector('.fps'),list=box.querySelector('.fpl');
+  const all=frFriends().map(f=>({name:frName(f.dev,f.name),on:isOn(f.dev)})).sort((a,b)=>(b.on-a.on)||a.name.localeCompare(b.name));
+  fps.style.display=all.length?'':'none';
+  if(!all.length){
+    list.innerHTML='<div class="fempty">Você ainda não tem amigos.<br>Adicione amigos no menu ☰ para poder convidá-los.<br><button type="button" class="fbt ok fpo">Abrir amigos</button></div>';
+    return;
+  }
+  const q=userKey(fps.value),sel=userKey(hid.value);
+  const fl=all.filter(f=>!q||userKey(f.name).includes(q));
+  list.innerHTML=fl.map(f=>`<button type="button" class="fpr${userKey(f.name)===sel?' sel':''}" data-n="${esc(f.name)}"><i class="odot${f.on?' on':''}"></i><span>${esc(f.name)}</span><small>${f.on?'Online':'Offline'}</small></button>`).join('')||'<div class="fempty">Nenhum amigo encontrado.</div>';
+}
+const paintPicks=()=>{paintPick('ppick');paintPick('ipick');};
+['ppick','ipick'].forEach(id=>{
+  const box=$('#'+id);
+  box.addEventListener('click',e=>{
+    const r=e.target.closest&&e.target.closest('.fpr');
+    if(r){try{Snd.sfx('click');}catch(x){}$('#'+box.dataset.for).value=r.dataset.n;paintPick(id);return;}
+    if(e.target.closest&&e.target.closest('.fpo')){$('#privbox').classList.remove('on');$('#invbox').classList.remove('on');openWin('w_fr');}
+  });
+  box.querySelector('.fps').addEventListener('input',()=>paintPick(id));
+});
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#privopen'))setTimeout(()=>{$('#pto').value='';$('#ppick .fps').value='';paintPick('ppick');},0);});
+
+/* ---- menu lateral (lista de opções) e janelas ---- */
+const WINS=['w_acc','w_fr','w_add','w_req','w_out'];
+function closeWins(){WINS.forEach(i=>$('#'+i).classList.remove('on'));}
+function openWin(id){
+  try{Snd.init();Snd.sfx('click');}catch(e){}
+  if(id==='w_out'&&mine){closeDrawer();toast('Saia da mesa antes de sair da conta.');return;}
+  if(id!=='w_out'&&!USER){closeDrawer();askUser('');return;}
+  closeDrawer();closeWins();
+  if(id==='w_acc'){paintProfile();gmsg('',true,'pf_nmsg');gmsg('',true,'pf_pmsg');}
+  if(id==='w_add')gmsg('',true,'frmsg');
+  if(id==='w_out'){
+    $('#lo_txt').innerHTML=hasPw()?'Sair desta conta neste aparelho? Você poderá entrar de novo com usuário e senha.':'<b>Esta conta não tem senha.</b> Se sair, você perde o acesso às suas moedas e ao histórico. Crie uma senha antes, em Configurações da conta.';
+    $('#lo_yes').textContent=hasPw()?'Sair':'Sair mesmo assim';$('#lo_yes').disabled=false;
+  }
+  paintFriends();
+  $('#'+id).classList.add('on');
+  if(id==='w_add')setTimeout(()=>{const i=$('#fr_to');if(i)i.focus();},250);
+}
+document.querySelectorAll('#drawer [data-w]').forEach(b=>{b.onclick=()=>openWin(b.dataset.w);});
+$('#logout').onclick=()=>openWin('w_out');
+document.querySelectorAll('.mw').forEach(w=>{
+  w.addEventListener('pointerdown',e=>{if(e.target===w)w.classList.remove('on');});
+  const x=w.querySelector('[data-wx]');if(x)x.onclick=()=>w.classList.remove('on');
+});
+$('#lo_no').onclick=closeWins;
+$('#lo_yes').onclick=async()=>{
+  if(mine){toast('Saia da mesa antes de sair da conta.');closeWins();return;}
+  $('#lo_yes').disabled=true;
+  try{if(fs&&DEV&&USER)await Promise.race([fs.doc('online/'+DEV).set({dev:DEV,name:USER,ts:Date.now(),off:true}),new Promise(r=>setTimeout(r,1500))]);}catch(e){}
+  try{await firebase.auth().signOut();}catch(e){}
+  ['vom_dev','vom_user','vom_nick'].forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+  try{document.cookie='vom_dev=;max-age=0;path=/;SameSite=Lax';}catch(e){}
+  location.reload();
+};
+function openDrawer(){
+  try{Snd.init();Snd.sfx('click');}catch(e){}
+  closeWins();paintDrawer();
+  const d=$('#drawer');d.classList.add('on');d.setAttribute('aria-hidden','false');
+}
+function closeDrawer(){const d=$('#drawer');d.classList.remove('on');d.setAttribute('aria-hidden','true');}
+$('#menubtn').onclick=()=>$('#drawer').classList.contains('on')?closeDrawer():openDrawer();
+$('#drwx').onclick=closeDrawer;
+$('#drwbg').addEventListener('pointerdown',closeDrawer);
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  if(WINS.some(i=>$('#'+i).classList.contains('on')))closeWins();
+  else if($('#drawer').classList.contains('on'))closeDrawer();
+});
 
 /* ---------- início ---------- */
 async function boot(){
@@ -2611,6 +3080,7 @@ async function boot(){
   }catch(e){initError=(e&&e.message)||String(e);}
   ready=true;
   if(db&&uid){
+    frStart();pingOnline();paintDrawer();
     fs.doc('invites/inv_'+DEV).onSnapshot(sn=>{myInv=sn.exists?sn.data():null;renderAll();},()=>{});
     fs.collection('invites').where('toDev','==',DEV).onSnapshot(sn=>{invs=sn.docs.map(d=>Object.assign({id:d.id},d.data()));paintInvite();},()=>{});
     fs.collection('presence').onSnapshot(sn=>{const q={};sn.forEach(d=>{q[d.id]=d.data();});pres=q;presOK=true;},()=>{presOK=false;});
