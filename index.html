@@ -4234,7 +4234,7 @@ async function botSelAnim(b,tid,turn,idx){
   const S0=tables[tid];if(!S0)return false;
   const alive=()=>{const S=tables[tid];return !!(S&&mine&&mine.tid===tid&&!S.pz&&S.status==='playing'&&S.phase==='trade'&&S.turn===turn&&S.seats[b]&&!S.seats[b].acted&&!S.seats[b].done);};
   const steps=botSelPlan(S0.seats[b].hand.length,idx,rvOf(S0)[b]);
-  const tot=steps.reduce((a,x)=>a+x.ms,0),cap=Math.max(0,Math.min(9000,getRules(S0).tms*1000*0.4,(S0.deadline-Date.now())*0.35)),k=tot>cap?cap/tot:1;   /* no máximo ~9s de animação */
+  const tot=steps.reduce((a,x)=>a+x.ms,0),target=Math.max(0,Math.min(7000,getRules(S0).tms*1000*0.3,(S0.deadline-Date.now())*0.45)),k=tot>0?target/tot:1;   /* a animação do bot dura ~7s (mais a espera inicial: ~10s por turno), sem estourar o tempo do turno */   /* no máximo ~9s de animação */
   const ref=fs.doc('tables/'+tid);
   for(const st of steps){
     while((animating||animLock>0)&&alive())await sleep(150);
@@ -4264,8 +4264,9 @@ function botNeed(S,b){
         if(rvOf(S)[me]>=0)return null;
         return {key:'rv:'+S.id,at:now,wait:botRand(1500,3500),run:()=>pickReveal(b,Math.floor(Math.random()*S.seats[me].hand.length))};
       }
+      if((p.tt||0)>0)return {key:'et:'+S.id+':'+S.turn+':'+p.traded,at:now,wait:botRand(1500,3000),run:()=>doEndTurn(b)};   /* já jogou neste turno: termina o turno (um movimento por turno, no ritmo de uma pessoa) */
       const tk='tr:'+S.id+':'+S.turn+':'+p.traded+':'+(p.tt||0),tid=S.id,turn=S.turn;
-      return {key:tk,at:now,wait:botRand(1000,2500),run:async()=>{
+      return {key:tk,at:now,wait:botRand(2000,3500),run:async()=>{
         if(botBusy)return;botBusy=true;
         try{
           if(botMem.key!==tk)botMem={key:tk,idx:botTradeIdx(S,b),up:Math.random()<0.4,done:false,fail:0};   /* up = mostrar (monte de cima) ou ocultar */
