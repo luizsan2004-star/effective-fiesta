@@ -428,6 +428,25 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
 .hand.pk .slot{cursor:pointer}
 .hand.pk .slot .back{box-shadow:var(--glowG)}
 .acebtn{margin-left:8px;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--gold);background:#0007;color:var(--gold);cursor:pointer}
+
+/* ===== perfil do oponente ===== */
+#profbox{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:#000b;z-index:300}
+#profbox.on{display:flex;animation:pop .25s ease}
+.oplink{color:var(--gold);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.pback{position:absolute;top:8px;left:8px;height:34px;padding:0 12px;border-radius:99px;border:1px solid #ffffff44;background:#0007;color:var(--ink);font-size:.85rem;cursor:pointer;font-family:var(--fb)}
+.pcoins{text-align:center;font-family:Georgia,serif;font-size:2rem;color:var(--gold);margin:2px 0 12px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.pgrid div{background:#0006;border:1px solid #ffffff22;border-radius:12px;padding:9px 10px;text-align:center}
+.pgrid small{display:block;color:var(--muted);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}
+.pgrid b{font-size:1.05rem}
+.pgrid b.pos,.pinfo b.pos{color:#8fe3a4}.pgrid b.neg,.pinfo b.neg{color:#ff8a94}
+.pbar{display:flex;height:10px;border-radius:99px;overflow:hidden;background:#ffffff1f;margin:2px 0 12px}
+.pbar i{display:block;height:100%}.pbar .g{background:#4cd18a}.pbar .r{background:#e0505f}.pbar .d{background:#b9c9bf}
+.pinfo{margin:0 0 6px}
+.pinfo div{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #ffffff1a;font-size:.9rem}
+.pinfo span{color:var(--muted)}.pinfo b{text-align:right}
+#profbody h4{font-family:Georgia,serif;color:var(--gold);margin:14px 0 4px;font-size:1rem;text-align:center}
+#profbody .pnote{color:var(--muted);font-size:.74rem;text-align:center;margin:4px 0}
 </style>
 </head>
 <body>
@@ -503,6 +522,12 @@ input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid
     <button class="btn" id="ulogbtn">Entrar</button>
   </div>
   <div class="uerr" id="uerr"></div>
+</div></div>
+<div id="profbox" role="dialog" aria-label="Perfil do jogador"><div class="wbox">
+  <button class="pback" id="profback" style="display:none">‹ Voltar</button>
+  <button class="rx" id="profx" aria-label="Fechar">✕</button>
+  <h3 id="proftitle">Jogador</h3>
+  <div id="profbody"></div>
 </div></div>
 <div id="walbox" role="dialog" aria-label="Carteira"><div class="wbox">
   <button class="rx" id="wx" aria-label="Fechar">✕</button>
@@ -917,7 +942,7 @@ function settle(S,W,w,force){
   if(!W.__h)Object.defineProperty(W,'__h',{value:[]});
   S.seats.forEach((x,k)=>{
     if(!x.dev)return;
-    W.__h.push({dev:x.dev,rec:{type:'game',res:w<0?'draw':(w===k?'win':'loss'),bet:st,opp:(S.seats[1-k]&&S.seats[1-k].name)||'?',tid:S.id,ts:Date.now()}});
+    W.__h.push({dev:x.dev,rec:{type:'game',res:w<0?'draw':(w===k?'win':'loss'),bet:st,opp:(S.seats[1-k]&&S.seats[1-k].name)||'?',oppDev:(S.seats[1-k]&&S.seats[1-k].dev)||'',tid:S.id,ts:Date.now()}});
   });
   S.payout={w,st:cr?st:st+cy/2,carried:cr};S.stake=0;S.sn=false;
 }
@@ -2208,15 +2233,15 @@ function paintHist(){
   const el=$('#whist');if(!el)return;
   if(!hist.length){el.innerHTML='<p class="hint">Nenhuma aposta ou doação ainda.</p>';return;}
   el.innerHTML=hist.map(h=>{
-    let ic,tx,cl='',val;
-    if(h.type==='gift_out'){ic='';tx='Doou para '+h.other;val='−'+h.amt;cl='neg';}
-    else if(h.type==='gift_in'){ic='';tx='Recebeu de '+h.other;val='+'+h.amt;cl='pos';}
-    else if(h.res==='win'){ic='';tx='Vitória contra '+h.opp;val='+'+h.bet;cl='pos';}
-    else if(h.res==='loss'){ic='';tx='Derrota contra '+h.opp;val='−'+h.bet;cl='neg';}
-    else{ic='';tx='Empate com '+h.opp;val='0';}
+    let pre,nm,dev='',cl='',val;
+    if(h.type==='gift_out'){pre='Doou para ';nm=h.other;val='−'+h.amt;cl='neg';}
+    else if(h.type==='gift_in'){pre='Recebeu de ';nm=h.other;val='+'+h.amt;cl='pos';}
+    else if(h.res==='win'){pre='Vitória contra ';nm=h.opp;dev=h.oppDev||'';val='+'+h.bet;cl='pos';}
+    else if(h.res==='loss'){pre='Derrota contra ';nm=h.opp;dev=h.oppDev||'';val='−'+h.bet;cl='neg';}
+    else{pre='Empate com ';nm=h.opp;dev=h.oppDev||'';val='0';}
     const n=TABLE_IDS.indexOf(h.tid);
     const sub=fmtT(h.ts)+(n>=0?' · Mesa '+(n+1):(isPriv(h.tid)?' · Privada':''));
-    return `<div class="hrow"><div><b>${esc(tx)}</b><small>${sub}</small></div><span class="${cl}">${val} 🪙</span></div>`;
+    return `<div class="hrow"><div><b>${esc(pre)}<a class="oplink" data-dev="${esc(dev)}" data-name="${esc(nm||'')}">${esc(nm||'?')}</a></b><small>${sub}</small></div><span class="${cl}">${val} 🪙</span></div>`;
   }).join('');
 }
 
@@ -2244,6 +2269,89 @@ function openWallet(){
 }
 function closeWallet(){$('#walbox').classList.remove('on');}
 function gmsg(m,ok,id){const e=$('#'+(id||'gmsg'));e.textContent=m;e.className='gmsg'+(ok?' ok':'');}
+
+/* ---------- perfil do oponente (aberto pelo nome no histórico) ---------- */
+const fmtD=ts=>{if(!ts)return '—';try{return new Date(ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});}catch(e){return '—';}};
+function ago(ts){
+  if(!ts)return '';
+  const m=Math.max(0,Math.floor((Date.now()-ts)/60000));
+  if(m<1)return 'agora há pouco';if(m<60)return 'há '+m+' min';
+  const h=Math.floor(m/60);if(h<24)return 'há '+h+' h';
+  const d=Math.floor(h/24);return d===1?'há 1 dia':'há '+d+' dias';
+}
+let profSeq=0,profStack=[],profCur=null;
+function closeProfile(){profSeq++;profStack=[];profCur=null;$('#profbox').classList.remove('on');}
+function profBack(){const p=profStack.pop();if(p)openProfile(p.dev,p.name,false);}
+async function openProfile(dev,name,push){
+  if(push!==false&&profCur&&$('#profbox').classList.contains('on'))profStack.push(profCur);
+  if(push!==false&&!$('#profbox').classList.contains('on'))profStack=[];
+  profCur={dev:dev||'',name:name||''};
+  const seq=++profSeq,bx=$('#profbody');
+  $('#profbox').classList.add('on');
+  $('#profback').style.display=profStack.length?'block':'none';
+  $('#proftitle').textContent=name||'Jogador';
+  bx.innerHTML='<p class="hint">Carregando perfil...</p>';
+  try{
+    if(!dev&&name){   /* partidas antigas não guardam o ID: tenta achar pelo nome de usuário */
+      const u=await fs.doc('usernames/'+userKey(name)).get();
+      if(u.exists)dev=u.data().dev||'';
+    }
+    if(!dev){bx.innerHTML='<p class="hint">Não foi possível encontrar o perfil deste jogador. Partidas antigas não guardam essa informação; as novas guardam.</p>';return;}
+    profCur.dev=dev;
+    const [ws,us,hs,mh]=await Promise.all([
+      fs.doc('wallets/'+dev).get(),
+      fs.collection('usernames').where('dev','==',dev).limit(1).get().catch(()=>null),
+      fs.collection('wallets/'+dev+'/history').orderBy('ts','desc').limit(300).get(),
+      (DEV&&DEV!==dev)?fs.collection('wallets/'+DEV+'/history').orderBy('ts','desc').limit(300).get().catch(()=>null):Promise.resolve(null)
+    ]);
+    if(seq!==profSeq)return;
+    const w=ws.exists?ws.data():{};
+    const uname=(us&&!us.empty)?(us.docs[0].data().name||''):'';
+    const all=hs.docs.map(d=>d.data());
+    const games=all.filter(h=>h.type==='game');
+    const n=games.length,wins=games.filter(h=>h.res==='win').length,losses=games.filter(h=>h.res==='loss').length,draws=n-wins-losses;
+    const pc=x=>n?Math.round(x*100/n):0,bw=x=>n?(x*100/n):0;
+    const net=games.reduce((a,h)=>a+(h.res==='win'?(h.bet||0):(h.res==='loss'?-(h.bet||0):0)),0);
+    const created=w.created||(all.length?all[all.length-1].ts:0);
+    const last=n?games[0].ts:0;
+    let streak='—';
+    if(n&&games[0].res!=='draw'){let c=0;for(const g of games){if(g.res===games[0].res)c++;else break;}streak=c+(games[0].res==='win'?' vitória'+(c>1?'s':'')+' seguida'+(c>1?'s':''):' derrota'+(c>1?'s':'')+' seguida'+(c>1?'s':''));}
+    let h2h='';
+    if(mh){
+      const mine2=mh.docs.map(d=>d.data()).filter(h=>h.type==='game'&&(h.oppDev?h.oppDev===dev:userKey(h.opp)===userKey(name||uname)));
+      const a=mine2.filter(h=>h.res==='win').length,b=mine2.filter(h=>h.res==='loss').length,c=mine2.length-a-b;
+      h2h=mine2.length?`<div><span>Seu confronto direto</span><b>${a} V · ${b} D${c?' · '+c+' E':''}</b></div>`:`<div><span>Seu confronto direto</span><b>sem partidas</b></div>`;
+    }
+    const rows=games.slice(0,10).map(h=>{
+      const pre=h.res==='win'?'Vitória contra ':(h.res==='loss'?'Derrota contra ':'Empate com ');
+      const cl=h.res==='win'?'pos':(h.res==='loss'?'neg':''),val=h.res==='win'?'+'+h.bet:(h.res==='loss'?'−'+h.bet:'0');
+      return `<div class="hrow"><div><b>${esc(pre)}<a class="oplink" data-dev="${esc(h.oppDev||'')}" data-name="${esc(h.opp||'')}">${esc(h.opp||'?')}</a></b><small>${fmtT(h.ts)}</small></div><span class="${cl}">${val} 🪙</span></div>`;
+    }).join('');
+    $('#proftitle').textContent=uname?('@'+uname):(name||'Jogador');
+    bx.innerHTML=`
+      <div class="pcoins">🪙 ${fmtC(w.coins||0)}</div>
+      <div class="pgrid">
+        <div><small>Partidas</small><b>${n}</b></div>
+        <div><small>Vitórias</small><b class="pos">${wins} · ${pc(wins)}%</b></div>
+        <div><small>Derrotas</small><b class="neg">${losses} · ${pc(losses)}%</b></div>
+        <div><small>Empates</small><b>${draws} · ${pc(draws)}%</b></div>
+      </div>
+      <div class="pbar"><i class="g" style="width:${bw(wins)}%"></i><i class="r" style="width:${bw(losses)}%"></i><i class="d" style="width:${bw(draws)}%"></i></div>
+      <div class="pinfo">
+        <div><span>Conta criada em</span><b>${fmtD(created)}</b></div>
+        <div><span>Última partida</span><b>${last?fmtT(last)+' ('+ago(last)+')':'—'}</b></div>
+        <div><span>Visto por último</span><b>${w.seen?ago(w.seen):'—'}</b></div>
+        <div><span>Saldo nas apostas</span><b class="${net>0?'pos':(net<0?'neg':'')}">${net>0?'+':(net<0?'−':'')}${Math.abs(net)} 🪙</b></div>
+        <div><span>Sequência atual</span><b>${streak}</b></div>
+        ${h2h}
+      </div>
+      <h4>Últimas partidas</h4>
+      ${rows||'<p class="hint">Nenhuma partida ainda.</p>'}
+      ${hs.size>=300?'<p class="pnote">Estatísticas das últimas 300 atividades.</p>':''}`;
+  }catch(e){
+    if(seq===profSeq)bx.innerHTML='<p class="hint">Não foi possível carregar o perfil. Confira sua conexão e as regras do Firestore.<br><small>'+esc((e&&e.message)||e)+'</small></p>';
+  }
+}
 
 async function donate(){
   if(giving)return;
@@ -2280,6 +2388,16 @@ async function donate(){
 }
 
 $('#wx').onclick=closeWallet;
+$('#profx').onclick=closeProfile;
+$('#profback').onclick=profBack;
+$('#profbox').addEventListener('pointerdown',e=>{if(e.target.id==='profbox')closeProfile();});
+document.addEventListener('click',e=>{
+  const a=e.target.closest&&e.target.closest('.oplink');
+  if(!a||!fs)return;
+  e.preventDefault();
+  try{Snd.sfx('click');}catch(x){}
+  openProfile(a.dataset.dev||'',a.dataset.name||'');
+});
 $('#walbox').addEventListener('pointerdown',e=>{if(e.target.id==='walbox')closeWallet();});
 document.querySelectorAll('#walbox [data-wt]').forEach(b=>{b.onclick=()=>wtabSet(b.dataset.wt);});
 document.querySelectorAll('#gchips button').forEach(b=>{b.onclick=()=>{$('#gamt').value=b.dataset.v==='all'?String(isAdmin()?10000:wallet.coins):b.dataset.v;};});
