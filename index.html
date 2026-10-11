@@ -152,11 +152,10 @@ h1{animation:glow 3s ease-in-out infinite alternate}
 .fw.turn{font-size:2.2rem;top:30%}
 .rvdark{position:fixed;inset:0;z-index:90;pointer-events:auto;background:radial-gradient(ellipse at center,#000000c8 0%,#000000f2 80%)}
 .rvtxt{position:fixed;left:0;right:0;top:40%;z-index:95;text-align:center;pointer-events:none;font:700 1.3rem Georgia,serif;letter-spacing:.14em;color:#e8c35a;text-shadow:0 0 18px #e8c35a88}
-.rvflash{position:fixed;inset:0;z-index:91;pointer-events:none}
-.rvflash.vida{background:radial-gradient(ellipse at center,#f6e29a 0%,#d8b24a 55%,#a67c1c 100%)}
-.rvflash.morte{background:radial-gradient(ellipse at center,#9a1424 0%,#5a0a14 60%,#2a0409 100%)}
-.fw.vida.rv{color:#1c3b00;text-shadow:0 0 26px #fff9,0 2px 0 #fff6}
-.fw.morte.rv{color:#ffe3e6;text-shadow:0 0 30px #ff2a3f,0 3px 0 #000a}
+.rvflash{position:fixed;inset:0;z-index:98;pointer-events:none}
+.rvfade{position:fixed;inset:0;z-index:91;pointer-events:none}
+.rvfade.vida{background:radial-gradient(ellipse at center,#f0d98a 0%,#c9a23a 60%,#8a6a14 100%)}
+.rvfade.morte{background:radial-gradient(ellipse at center,#c8202f 0%,#7a0f1b 60%,#3d0610 100%)}
 .dbig{position:fixed;inset:0;z-index:95;pointer-events:none}
 .dbig .dw2{position:absolute;left:50%;top:50%;margin:calc(min(62px,15vw)/-2) 0 0 calc(min(62px,15vw)/-2)}
 .dbig .die{width:min(62px,15vw);height:min(62px,15vw);padding:min(8px,2vw);gap:1px;border-radius:min(12px,3vw);box-shadow:0 4px 0 #bbb,0 10px 18px #000c}
@@ -1942,16 +1941,23 @@ async function suspenseReveal(c){
   if(t.animate)await t.animate([{opacity:1},{opacity:0}],{duration:250,fill:'both'}).finished.catch(()=>{});
   t.remove();
   await sleep(450);   /* silêncio antes da revelação */
-  /* o fundo escuro vira a cor do resultado e some nessa mesma cor */
-  const f=document.createElement('div');f.className='rvflash '+c;
+  const f=document.createElement('div');f.className='rvflash';f.style.background=c==='vida'?'#f0d98a':'#c8202f';
   document.body.appendChild(f);
-  if(f.animate)f.animate([{opacity:0},{opacity:1}],{duration:380,easing:'ease-out',fill:'both'});
+  if(f.animate)f.animate([{opacity:.85},{opacity:0}],{duration:700}).onfinish=()=>f.remove();else f.remove();
   Snd.sfx(c==='vida'?'vida':'morte');
-  flashWord(c==='vida'?'VIDA':'MORTE',(c==='vida'?'vida':'morte')+' rv');
-  await sleep(2100);
-  if(o.animate)o.animate([{opacity:1},{opacity:0}],{duration:700,fill:'both'});
-  if(f.animate)await f.animate([{opacity:1},{opacity:0}],{duration:700,fill:'both'}).finished.catch(()=>{});
-  f.remove();
+  flashWord(c==='vida'?'VIDA':'MORTE',c==='vida'?'vida':'morte');
+  await sleep(1500);
+  if(c==='vida'){
+    /* Vida: o escuro vai degradando para dourado e some nessa cor */
+    const g=document.createElement('div');g.className='rvfade vida';document.body.appendChild(g);
+    if(g.animate)await g.animate([{opacity:0},{opacity:1}],{duration:600,easing:'ease-in',fill:'both'}).finished.catch(()=>{});
+    if(o.animate)o.animate([{opacity:1},{opacity:0}],{duration:900,fill:'both'});
+    if(g.animate)await g.animate([{opacity:1},{opacity:0}],{duration:900,easing:'ease-out',fill:'both'}).finished.catch(()=>{});
+    g.remove();
+  }else{
+    /* Morte: continua preto e some */
+    if(o.animate)await o.animate([{opacity:1},{opacity:0}],{duration:700,fill:'both'}).finished.catch(()=>{});
+  }
   o.remove();
 }
 async function animResult(S,i){
