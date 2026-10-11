@@ -3496,6 +3496,35 @@ function botTradeIdx(S,b){
   if(!bad.length||Math.random()<0.15)return [];
   return bad.slice(0,Math.min(mx,Math.random()<0.5?1:2));
 }
+/* animação do bot escolhendo cartas: mostra ao jogador as cartas que ele "toca" (campo sel<assento> da mesa, igual ao de uma pessoa) */
+let botBusy=false,botMem={key:''};
+function botSelPlan(n,idx,rv){
+  const steps=[],others=[...Array(n).keys()].filter(k=>k!==rv);
+  /* 1) olha algumas cartas, uma de cada vez */
+  const looks=1+Math.floor(Math.random()*3);let last=-1;
+  for(let k=0;k<looks&&others.length;k++){
+    let c;do{c=others[Math.floor(Math.random()*others.length)];}while(c===last&&others.length>1);
+    last=c;steps.push({sel:[c],ms:botRand(600,1100)});steps.push({sel:[],ms:botRand(200,450)});
+  }
+  /* 2) marca as cartas da troca, uma por vez, e segura a seleção antes de trocar */
+  const cur=[];
+  idx.forEach((c,k)=>{cur.push(c);steps.push({sel:[...cur].sort((a,b)=>a-b),ms:k===idx.length-1?botRand(1100,1800):botRand(800,1400)});});
+  return steps;
+}
+/* devolve false se a mesa mudou no meio (a jogada é cancelada) */
+async function botSelAnim(b,tid,turn,idx){
+  const S0=tables[tid];if(!S0)return false;
+  const alive=()=>{const S=tables[tid];return !!(S&&mine&&mine.tid===tid&&S.status==='playing'&&S.phase==='trade'&&S.turn===turn&&S.seats[b]&&!S.seats[b].acted&&!S.seats[b].done);};
+  const steps=botSelPlan(S0.seats[b].hand.length,idx,rvOf(S0)[b]);
+  const tot=steps.reduce((a,x)=>a+x.ms,0),cap=Math.min(9000,getRules(S0).tms*1000*0.4),k=tot>cap?cap/tot:1;   /* no máximo ~9s de animação */
+  const ref=fs.doc('tables/'+tid);
+  for(const st of steps){
+    if(!alive())return false;
+    await ref.update({['sel'+b]:st.sel}).catch(()=>{});
+    await sleep(st.ms*k);
+  }
+  return alive();
+}
 let botPlan={key:'',due:0};
 function botNeed(S,b){
   const now=Date.now(),me=1-b;
@@ -3511,9 +3540,18 @@ function botNeed(S,b){
         if(rvOf(S)[me]>=0)return null;
         return {key:'rv:'+S.id,at:now,wait:botRand(1500,3500),run:()=>pickReveal(b,Math.floor(Math.random()*S.seats[me].hand.length))};
       }
-      return {key:'tr:'+S.id+':'+S.turn+':'+p.traded,at:now,wait:botRand(2200,6000),run:()=>{
-        const idx=botTradeIdx(S,b);
-        if(idx.length)doTrade(b,idx);else doDirect(b);
+      const tk='tr:'+S.id+':'+S.turn+':'+p.traded,tid=S.id,turn=S.turn;
+      return {key:tk,at:now,wait:botRand(1000,2500),run:async()=>{
+        if(botBusy)return;botBusy=true;
+        try{
+          if(botMem.key!==tk)botMem={key:tk,idx:botTradeIdx(S,b),done:false};
+          if(!botMem.done){
+            const ok=await botSelAnim(b,tid,turn,botMem.idx);
+            if(!ok)return;
+            botMem.done=true;
+          }
+          if(botMem.idx.length)await doTrade(b,botMem.idx);else doDirect(b);
+        }finally{botBusy=false;}
       }};
     }
     if(S.phase==='parity'){
@@ -3538,7 +3576,7 @@ function botNeed(S,b){
   return null;
 }
 setInterval(()=>{
-  if(!fs||!mine||busy)return;
+  if(!fs||!mine||busy||botBusy)return;
   const S=tables[mine.tid];
   if(!S||!S.seats){return;}
   const bw=$('#w_bot');if(bw&&bw.classList.contains('on')&&S.status!=='open')bw.classList.remove('on');
